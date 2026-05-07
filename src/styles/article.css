@@ -1,0 +1,248 @@
+/**
+ * Prose 文章排版样式
+ * 用于统一 Markdown / 结构化文档的阅读体验，
+ * 涵盖标题、段落、代码、列表、表格、图片、引用等典型元素。
+ * 大量使用 CSS 变量与 Tailwind 工具类，方便主题定制与响应式处理。
+ */
+
+/* ---------- 基础容器 ---------- */
+.prose {
+	line-height: 1.8;          /* 较大行高，提升长文阅读舒适度 */
+	color: inherit;            /* 继承父级文本颜色，跟随主题 */
+	word-break: break-word;    /* 长单词/链接在必要时断行，防止溢出 */
+	letter-spacing: 0.03em;    /* 轻微字间距，让字形更透气 */
+	font-size: 15px;           /* 基准字号，适合正文阅读 */
+	width: 100%;
+	overflow: hidden;          /* 防止子元素外边距穿透或意外溢出 */
+}
+
+/* ========== 标题 ========== */
+.prose h1,
+.prose h2,
+.prose h3 {
+	font-weight: 700;
+	line-height: 1.25;        /* 标题行高更紧凑 */
+	margin-top: 2em;
+	margin-bottom: 1.5em;     /* 标题与上下文的宽松间距 */
+
+	/* 使用 ::before 伪元素显示井号标记，模拟 Markdown 源码感 */
+	&::before {
+		content: '# ';
+		@apply text-brand/60;  /* Tailwind：品牌色文本，透明度 60% */
+	}
+}
+.prose h1 {
+	font-size: 1.75rem;
+}
+.prose h2 {
+	font-size: 1.25rem;
+}
+.prose h3 {
+	font-size: 1rem;
+	font-weight: 600;
+
+	&::before {
+		content: '## ';
+		@apply text-brand/60;
+	}
+}
+.prose h4 {
+	font-size: 0.85rem;
+	font-weight: 500;
+	&::before {
+		content: '### ';
+		@apply text-brand/60;
+	}
+}
+.prose h5 {
+	font-size: 0.75rem;
+	font-weight: 500;
+	&::before {
+		content: '#### ';
+		@apply text-brand/60;
+	}
+}
+
+/* ---------- 段落 ---------- */
+.prose p {
+	margin: 1.25em 0;         /* 段落之间的纵向呼吸感 */
+}
+
+/* 粗体/强调：使用品牌色高亮，字重 600，并添加少量水平留白 */
+.prose strong {
+	font-weight: 600;
+	color: var(--color-brand);
+	margin: 0 0.25em;
+}
+
+/* ---------- 链接 ---------- */
+.prose a {
+	text-decoration: underline;
+	text-underline-offset: 2px;          /* 下划线略微拉开，更清晰 */
+	color: var(--color-blue-500);       /* 主题蓝色，可替换 */
+	font-weight: 500;
+}
+.prose a:hover {
+	opacity: 0.9;                       /* 悬停时微透明，提供反馈 */
+}
+
+/* ---------- 列表 ---------- */
+.prose ul,
+.prose ol {
+	margin: 0.75em 0 0.75em 1.25em;    /* 左侧缩进 */
+}
+.prose ul {
+	list-style-type: square;            /* 无序列表使用方形符号 */
+}
+.prose ol {
+	list-style-type: lower-roman;       /* 有序列表使用小写罗马数字 */
+}
+.prose li {
+	margin: 0.35em 0;                  /* 列表项纵向间距 */
+}
+
+/* ---------- 任务列表（Task List） ---------- */
+.prose li.task-list-item {
+	list-style-type: none;              /* 隐藏默认标志 */
+	margin-left: -1.25em;              /* 抵消父级 ul/ol 的缩进，与段落左对齐 */
+	padding-left: 0;
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5em;                        /* 复选框与文本间间距 */
+}
+.prose li.task-list-item input[type='checkbox'] {
+	margin-top: 0.5em;                 /* 视觉上与首行文字对齐 */
+	cursor: default;
+	flex-shrink: 0;                    /* 复选框宽度不会被挤压 */
+}
+
+/* ---------- 代码 ---------- */
+/* 行内代码 */
+.prose code {
+	@apply bg-brand-secondary/8;          /* 极淡的品牌次要色背景 */
+	border: 1px solid rgba(0, 0, 0, 0.06);
+	padding: 0.15em 0.4em;
+	border-radius: 6px;
+	font-size: 0.9em;
+	font-family: var(--font-mono);        /* 等宽字体变量 */
+}
+/* 代码块 */
+.prose pre {
+	border: 1px solid rgba(0, 0, 0, 0.06);
+	padding: 1rem 1.25rem;
+	border-radius: 12px;
+	overflow: auto;                       /* 代码过长时横向滚动 */
+	margin: 1em 0 2em;
+	line-height: 1.25em;
+	width: 100%;
+	display: block;
+}
+/* 代码块内的行内代码还原干净样式 */
+.prose pre code {
+	background: transparent !important;
+	border: 0;
+	padding: 0;
+	font-size: 0.95em;
+	tab-size: 2;
+}
+
+/* ---------- 代码块包装器 & 复制按钮 ---------- */
+.prose .code-block-wrapper {
+	position: relative;                   /* 为复制按钮提供定位上下文 */
+	margin: 1em 0 2em;
+}
+
+/* 包装器内的 pre 移除自身外边距，由包装器统一控制 */
+.prose .code-block-wrapper > pre {
+	margin: 0;
+}
+
+.prose .code-block-copy-btn {
+	position: absolute;
+	top: 0.75rem;
+	right: 0.75rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	background: rgba(255, 255, 255, 0.9);
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 6px;
+	cursor: pointer;
+	opacity: 0;                            /* 默认隐藏，hover 时显示 */
+	transition: opacity 0.2s, background 0.2s;
+	z-index: 10;
+}
+
+/* 鼠标悬浮在代码块区域时显示复制按钮 */
+.prose .code-block-wrapper:hover .code-block-copy-btn {
+	opacity: 1;
+}
+
+.prose .code-block-copy-btn:hover {
+	background: rgba(255, 255, 255, 1);
+	border-color: rgba(0, 0, 0, 0.15);
+}
+
+/* 点击时微缩放，提供按压反馈 */
+.prose .code-block-copy-btn:active {
+	transform: scale(0.95);
+}
+
+/* ---------- 图片 ---------- */
+.prose img {
+	max-width: 40%;                        /* 限制桌面端图片最大宽度，避免过宽 */
+	margin: 1.5em auto;                    /* 居中显示 */
+	height: auto;
+	border-radius: 12px;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+
+	@apply max-sm:max-w-full;              /* 小屏幕下图片撑满容器 */
+}
+
+/* ---------- 引用块 ---------- */
+.prose blockquote {
+	border-left: 3px solid var(--color-brand);    /* 左侧品牌色强调线 */
+	background: rgba(0, 0, 0, 0.03);             /* 极浅灰色背景 */
+	margin: 1em 0;
+	padding: 0.75em 1em;
+	border-radius: 8px;
+}
+
+/* ---------- 水平分割线 ---------- */
+.prose hr {
+	border: 0;
+	border-top: 1px solid rgba(0, 0, 0, 0.08);   /* 纤细分割线 */
+	margin: 1.5em 0;
+}
+
+/* ---------- 表格 ---------- */
+.prose table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.95em;
+	margin: 1em 0;
+}
+.prose th,
+.prose td {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.08); /* 行间淡分隔线 */
+	padding: 0.5em 0.6em;
+	text-align: left;
+}
+.prose thead th {
+	font-weight: 600;
+}
+
+/* ---------- 锚点偏移 ---------- */
+/* 为页面内标题锚点预留顶部距离，避免被固定导航栏遮挡 */
+.prose [id] {
+	scroll-margin-top: 100px;
+}
+
+/* ---------- 内嵌框架 ---------- */
+.prose iframe {
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 8px;
+}

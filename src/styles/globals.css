@@ -1,0 +1,249 @@
+/* ============================================================
+   导入外部样式
+   ============================================================ */
+
+/* 引入 Tailwind CSS 的基础层、组件层和工具类层 */
+@import 'tailwindcss';
+
+/* 引入 KaTeX 数学公式渲染样式（最小化版本） */
+@import 'katex/dist/katex.min.css';
+
+/* 引入自定义主题变量（如颜色、字体等 CSS 自定义属性） */
+@import './theme.css';
+
+/* 引入文章详情页面的定制样式 */
+@import './article.css';
+
+/* 使用 Tailwind CSS 官方动画插件，提供一组预设动画工具类 */
+@plugin 'tailwindcss-animate';
+
+
+/* ============================================================
+   自定义工具类 — 隐藏滚动条
+   ============================================================ */
+
+@utility scrollbar-none {
+	/* Firefox：隐藏滚动条 */
+	scrollbar-width: none;
+	/* Chrome/Safari/Edge：隐藏滚动条 */
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+
+/* ============================================================
+   基础层（base）重置与全局样式
+   ============================================================ */
+
+@layer base {
+	html {
+		/* 应用 Tailwind 类：文字主色、背景色、高度满屏、紧凑行高 */
+		@apply text-primary bg-bg h-full leading-tight;
+		/* 平滑滚动行为（锚点跳转时） */
+		scroll-behavior: smooth;
+	}
+
+	body {
+		/* 高度占满视口，背景透明/无渐变 */
+		@apply h-full bg-none;
+	}
+
+	/* 所有元素的默认边框颜色使用主题定义的 border 色 */
+	* {
+		@apply border-border;
+	}
+
+	/* 输入框聚焦时去掉浏览器默认轮廓（可能由其他样式接管聚焦反馈） */
+	input:focus,
+	textarea:focus {
+		outline: none;
+	}
+
+	/* 当输入框显示占位符文本时，溢出内容用省略号截断 */
+	input:placeholder-shown {
+		text-overflow: ellipsis;
+	}
+
+	/* 按钮默认采用手型光标 */
+	button {
+		@apply cursor-pointer;
+	}
+
+	/* ------------------------------------------------------------
+	   自定义范围（range）滑块轨道样式（会被应用到 input[type=range]）
+	   ------------------------------------------------------------ */
+	.range-track {
+		/* 让滑块在 flex 容器中可伸缩 */
+		@apply flex-1;
+		appearance: none;
+		height: 6px;
+		border-radius: 9999px; /* 全圆角 */
+		/* 渐变轨道：从品牌色过渡到半透明品牌色 */
+		background: linear-gradient(90deg, var(--color-brand) 0%, color-mix(in srgb, var(--color-brand) 50%, transparent) 100%);
+	}
+
+	/* Chrome/Safari 的轨道样式（webkit 私有伪元素） */
+	.range-track::-webkit-slider-runnable-track {
+		height: 6px;
+		border-radius: 9999px;
+		background: linear-gradient(90deg, 0%, color-mix(in srgb, var(--color-brand) 50%, transparent) 100%);
+	}
+
+	/* Firefox 的轨道样式 */
+	.range-track::-moz-range-track {
+		height: 6px;
+		border-radius: 9999px;
+		background: linear-gradient(90deg, var(--color-brand) 0%, color-mix(in srgb, var(--color-brand) 50%, transparent) 100%);
+	}
+
+	/* Chrome/Safari 的滑块滑块 Thumb 样式 */
+	.range-track::-webkit-slider-thumb {
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		border-radius: 9999px;
+		background: var(--color-brand);
+		border: 2px solid white;
+		margin-top: -5px; /* 竖直居中微调 */
+		box-shadow: 0 5px 12px color-mix(in srgb, var(--color-brand) 50%, transparent);
+	}
+
+	/* Firefox 的滑块 Thumb 样式 */
+	.range-track::-moz-range-thumb {
+		width: 16px;
+		height: 16px;
+		border-radius: 9999px;
+		background: var(--color-brand);
+		border: 2px solid white;
+		box-shadow: 0 5px 12px color-mix(in srgb, var(--color-brand) 50%, transparent);
+	}
+
+	/* ------------------------------------------------------------
+	   Windows 平台特定样式：强制隐藏滚动条，包括所有子元素
+	   ------------------------------------------------------------ */
+	.windows {
+		@apply scrollbar-none;
+		* {
+			@apply scrollbar-none;
+		}
+	}
+
+	/* ------------------------------------------------------------
+	   Sonner 提示库 (Toaster) 展示样式微调
+	   ------------------------------------------------------------ */
+	html li[data-sonner-toast][data-styled='true'] {
+		/* 用 !important 覆盖 Sonner 默认阴影，改为更柔和的投影 */
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+		/* 半透明白色背景 + 背光滤镜模糊效果 */
+		@apply bg-white/40! backdrop-blur;
+	}
+}
+
+
+/* ============================================================
+   工具类层（utilities）：复合样式组件
+   ============================================================ */
+
+/* 卡片容器：用于绝对定位、圆角、边框内边距、毛玻璃效果 */
+@utility card {
+	@apply bg-card absolute rounded-[40px] border p-6;
+	/* 外层柔和的阴影 + 内嵌高光 */
+	box-shadow:
+		0 40px 50px -32px rgba(0, 0, 0, 0.05),
+		inset 0 0 20 rgba(255, 255, 255, 0.25);
+	backdrop-filter: blur(4px); /* 背景模糊 */
+
+	/* 当卡片上存在 .squircle 类时，尝试使用 corner-shape 实验属性实现超椭圆角 */
+	&.squircle {
+		@supports (corner-shape: squircle) {
+			corner-shape: squircle;
+			@apply rounded-[64px];
+		}
+	}
+}
+
+/* 仅提供超椭圆圆角能力的工具类 */
+@utility card-rounded {
+	@apply rounded-[40px];
+	@supports (corner-shape: squircle) {
+		corner-shape: squircle;
+		@apply rounded-[64px];
+	}
+}
+
+/* 文字渐变效果：半透明黑渐变叠加品牌色渐变，并裁剪到文字上 */
+@utility text-linear {
+	background: linear-gradient(to right bottom, #0003 0%, #aaa1), linear-gradient(to right bottom, var(--color-brand) 40%, var(--color-brand-secondary));
+	-webkit-background-clip: text; /* 将背景裁剪到文字范围 */
+	-webkit-text-fill-color: transparent; /* 文字填充颜色设为透明，以显示背景渐变 */
+	background-clip: text;           /* 标准属性 */
+}
+
+/* 背景渐变：品牌色到辅助品牌的线性渐变 */
+@utility bg-linear {
+	background: linear-gradient(to right bottom, var(--color-brand) 0%, var(--color-brand-secondary));
+	color: white;
+}
+
+/* 统一的柔和投影 */
+@utility shadow {
+	box-shadow: 0 40px 50px -32px rgba(0, 0, 0, 0.05);
+}
+
+/* 按钮圆角工具类，支持超椭圆退化 */
+@utility btn-rounded {
+	@apply rounded-xl;
+	@supports (corner-shape: squircle) {
+		corner-shape: squircle;
+		@apply rounded-2xl;
+	}
+}
+
+/* 品牌按钮：填充品牌色 + 圆角 + 弹性布局 + 边框 + 内边距 + 文字样式 */
+@utility brand-btn {
+	@apply bg-brand btn-rounded flex items-center gap-2 border-[1.5px] px-4 py-2 text-sm font-medium text-white;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* 轻微阴影 */
+}
+
+/* 隐藏数字输入框的增减按钮（spinner） */
+@utility no-spinner {
+	&::-webkit-outer-spin-button,
+	&::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	/* Firefox 下通过 -moz-appearance: textfield 移除箭头 */
+	-moz-appearance: textfield;
+}
+
+
+/* ============================================================
+   关键帧动画 — 心跳效果
+   ============================================================ */
+
+@keyframes heartbeat-frame {
+	0%,
+	100% {
+		transform: scale(1);      /* 正常大小 */
+	}
+	20% {
+		transform: scale(1.15);   /* 放大 */
+	}
+	40% {
+		transform: scale(1);      /* 还原 */
+	}
+	60% {
+		transform: scale(1.15);   /* 再次放大 */
+	}
+	80% {
+		transform: scale(1);      /* 再次还原 */
+	}
+}
+
+/* 当鼠标悬停在 heartbeat 容器上时，内部 .heartbeat 元素执行心跳动画 */
+.heartbeat-container:hover {
+	.heartbeat {
+		animation: heartbeat-frame 0.8s ease-in-out;
+	}
+}

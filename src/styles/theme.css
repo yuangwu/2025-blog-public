@@ -1,0 +1,25 @@
+@theme {
+  /* 主色调：深蓝绿色，常用于标题、强调文字或深色背景元素 */
+  --color-primary: #334f52;
+  /* 辅助色：灰蓝色，用于次要文字、图标等非重点内容 */
+  --color-secondary: #7b888e;
+  /* 辅助品牌色：鲜亮的青色，多用于悬停、按钮高亮或装饰色 */
+  --color-brand-secondary: #1fc9e7;
+  /* 页面背景色：浅灰色，提供柔和的整体视觉 */
+  --color-bg: #eeeeee;
+  /* 边框颜色：白色，常用于卡片边界或分割线 */
+  --color-border: #fff;
+  /* 品牌主色：清新的青绿色，用于主按钮、链接等核心交互元素 */
+  --color-brand: #35bfab;
+  /* 卡片背景色：白色半透明（约 40% 透明度），适合毛玻璃/磨砂效果 */
+  --color-card: #ffffff66;
+  /* 文章区域背景：白色半透明（约 80% 透明度），在保证可读性的同时保留一定通透感 */
+  --color-article: #ffffffcc;
+
+  /* 装饰性字体：Averia Gruesa Libre 风格鲜明的手写体，适合标题或特殊强调 */
+  --font-averia: 'Averia Gruesa Libre', sans-serif;
+  /* 正文字体栈：优先使用苹方，然后依次回退到各系统原生无衬线字体，最终为通用无衬线，兼顾中英文显示 */
+  --font-sans:
+    'PingFang SC', -apple-system, system-ui, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif, BlinkMacSystemFont, 'Helvetica Neue',
+    'Hiragino Sans GB', 'Microsoft YaHei', Arial;
+}

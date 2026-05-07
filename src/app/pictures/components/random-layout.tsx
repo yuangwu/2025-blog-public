@@ -8,46 +8,38 @@ import siteContent from '@/config/site-content.json'
 import { cn } from '@/lib/utils'
 import { useSize } from '@/hooks/use-size'
 
-// ----------------------------------------------------------------------
-// 类型定义
-// ----------------------------------------------------------------------
-
 interface RandomLayoutProps {
-	pictures: Picture[] // 图片数据数组
-	isEditMode?: boolean // 是否为编辑模式，用于显示删除按钮
-	onDeleteSingle?: (pictureId: string, imageIndex: number | 'single') => void // 单张删除回调
-	onDeleteGroup?: (picture: Picture) => void // 整组删除回调
+	pictures: Picture[]
+	isEditMode?: boolean
+	onDeleteSingle?: (pictureId: string, imageIndex: number | 'single') => void
+	onDeleteGroup?: (picture: Picture) => void
 }
 
-// 计算好的位置信息
 type PositionedItem = {
 	x: number
 	y: number
-	rotation: number // 旋转角度（度）
+	rotation: number
 }
 
-// 图片原始尺寸
 type OriginalSize = {
 	width: number
 	height: number
 }
 
-// 单个浮动图片组件的属性
 interface FloatingImageProps {
 	url: string
-	index: number // 全局序号
-	groupIndex: number // 所属组序号
+	index: number
+	groupIndex: number
 	position: PositionedItem
 	description?: string
 	uploadedAt?: string
 	pictureId: string
-	imageIndex: number | 'single' // 组内序号，单图时为 'single'
+	imageIndex: number | 'single'
 	isEditMode?: boolean
 	onDeleteSingle?: (pictureId: string, imageIndex: number | 'single') => void
 	onDeleteGroup?: () => void
 }
 
-// 扁平化后的 URL 条目
 type UrlItem = {
 	url: string
 	groupIndex: number
@@ -57,15 +49,6 @@ type UrlItem = {
 	imageIndex: number | 'single'
 }
 
-// ----------------------------------------------------------------------
-// 工具函数
-// ----------------------------------------------------------------------
-
-/**
- * 将多组图片数据扁平化为单一的 UrlItem 列表。
- * 每个 Picture 可能包含单张 image，也可能包含多张 images。
- * 如果是单张，imageIndex 标记为 'single'；多张则按数组下标记录。
- */
 const buildUrlList = (pictures: Picture[]): UrlItem[] => {
 	const result: UrlItem[] = []
 
@@ -98,13 +81,9 @@ const buildUrlList = (pictures: Picture[]): UrlItem[] => {
 	return result
 }
 
-// 全局 z-index 计数器，用于控制图片的层叠顺序（新点击的图片置于顶层）
 let lastZIndex = 10
-const TOP_Z_INDEX = 9999 // 全屏查看时的最高层级
+const TOP_Z_INDEX = 9999
 
-/**
- * 格式化上传时间为 "YYYY-MM-DD HH:mm" 格式。
- */
 const formatUploadedAt = (uploadedAt?: string) => {
 	if (!uploadedAt) return ''
 	const date = new Date(uploadedAt)
@@ -119,10 +98,6 @@ const formatUploadedAt = (uploadedAt?: string) => {
 	return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
-/**
- * 从 localStorage 读取已保存的拖拽偏移量，
- * 使用图片 url 作为键名，以实现拖拽位置持久化。
- */
 const loadSavedOffset = (url: string): { x: number; y: number } => {
 	try {
 		const saved = localStorage.getItem(`picture-offset-${url}`)
@@ -136,9 +111,6 @@ const loadSavedOffset = (url: string): { x: number; y: number } => {
 	return { x: 0, y: 0 }
 }
 
-/**
- * 将拖拽偏移量保存到 localStorage。
- */
 const saveOffset = (url: string, offset: { x: number; y: number }) => {
 	try {
 		localStorage.setItem(`picture-offset-${url}`, JSON.stringify(offset))
@@ -146,10 +118,6 @@ const saveOffset = (url: string, offset: { x: number; y: number }) => {
 		console.error('Failed to save offset:', error)
 	}
 }
-
-// ----------------------------------------------------------------------
-// 单个浮动图片组件
-// ----------------------------------------------------------------------
 
 const FloatingImage = ({
 	url,
@@ -164,31 +132,22 @@ const FloatingImage = ({
 	onDeleteSingle,
 	onDeleteGroup
 }: FloatingImageProps) => {
-	// 获取屏幕中心坐标（来自全局状态）
 	const { centerX, centerY } = useCenterStore()
-	// maxSM 用于判断是否为小屏设备；init 用来触发尺寸计算
 	const { maxSM, init } = useSize()
-	const bodyRef = useRef(document.body) // 拖拽约束容器
-	const mouseDownTimeRef = useRef<number | null>(null) // 用于区分点击与拖拽
-	const [zIndex, setZIndex] = useState(index) // 当前图片的层级
-	const [show, setShow] = useState(false) // 控制渐入动画的触发
-	const [dragOffset, setDragOffset] = useState(() => loadSavedOffset(url)) // 拖拽偏移量，初始从 localStorage 恢复
+	const bodyRef = useRef(document.body)
+	const mouseDownTimeRef = useRef<number | null>(null)
+	const [zIndex, setZIndex] = useState(index)
+	const [show, setShow] = useState(false)
+	const [dragOffset, setDragOffset] = useState(() => loadSavedOffset(url))
 
-	// 延迟依次出现，形成交错动画效果
 	useEffect(() => {
 		setTimeout(() => {
 			setShow(true)
 		}, 200 * index)
 	}, [])
 
-	// 存储图片加载后的原始尺寸
 	const [originalSize, setOriginalSize] = useState<OriginalSize | null>(null)
 
-	/**
-	 * 计算在缩略状态下的显示尺寸。
-	 * 宽高比被限制在 [2/3, 3/2] 之间，基准宽度为 200px，
-	 * 确保各种比例的图片都能较好地展示。
-	 */
 	const displaySize = useMemo(() => {
 		if (!originalSize) {
 			return { width: 200, height: 200 }
@@ -207,11 +166,6 @@ const FloatingImage = ({
 		}
 	}, [originalSize])
 
-	/**
-	 * 计算全屏查看时的显示尺寸。
-	 * 以原始尺寸为基准，根据视口大小等比缩放，确保不超出屏幕且留有内边距。
-	 * 同时限制最大放大倍数为 1（即不放大超过原始尺寸）。
-	 */
 	const zoomedSize = useMemo(() => {
 		if (!originalSize) {
 			return { width: 200, height: 200 }
@@ -233,17 +187,13 @@ const FloatingImage = ({
 		}
 	}, [originalSize])
 
-	// 是否处于全屏缩放查看状态
 	const [isZoomed, setIsZoomed] = useState(false)
-	// 记录拖拽开始时的偏移量，用于正确计算最终位置
 	const dragStartOffsetRef = useRef({ x: 0, y: 0 })
 
-	// 如果尚未加载或位置计算未完成，不渲染
 	if (!position || !show) return null
 
 	return (
 		<>
-			{/* 全屏模式下的半透明遮罩层，点击可退出全屏 */}
 			{isZoomed && (
 				<motion.div
 					onClick={() => {
@@ -257,17 +207,15 @@ const FloatingImage = ({
 				/>
 			)}
 			<motion.div
-				drag={!isZoomed} // 仅在非全屏模式允许拖拽
-				dragConstraints={bodyRef} // 拖拽范围限制在 body 内
-				dragMomentum={false} // 禁用惯性，以便精确定位
+				drag={!isZoomed}
+				dragConstraints={bodyRef}
+				dragMomentum={false}
 				onDragStart={() => {
 					if (!isZoomed) {
-						// 记录拖拽开始时的偏移，用于后续计算新偏移
 						dragStartOffsetRef.current = { ...dragOffset }
 					}
 				}}
 				onMouseDown={event => {
-					// 提升当前图片到最高层级
 					lastZIndex = lastZIndex + 1
 					setZIndex(lastZIndex)
 					mouseDownTimeRef.current = event.timeStamp
@@ -275,12 +223,10 @@ const FloatingImage = ({
 				onMouseUp={event => {
 					if (mouseDownTimeRef.current !== null) {
 						const duration = event.timeStamp - mouseDownTimeRef.current
-						// 按下时长 <= 150ms 视为点击，切换全屏/缩略状态
 						if (duration <= 150) {
 							if (!isZoomed) {
 								setIsZoomed(true)
 							} else if (maxSM) {
-								// 小屏设备点击已放大的图片可退出全屏
 								setIsZoomed(false)
 							}
 						}
@@ -289,7 +235,6 @@ const FloatingImage = ({
 				}}
 				onDragEnd={(_, info) => {
 					if (!isZoomed) {
-						// 计算新的偏移量并保存
 						const newOffset = {
 							x: dragStartOffsetRef.current.x + info.offset.x,
 							y: dragStartOffsetRef.current.y + info.offset.y
@@ -303,18 +248,17 @@ const FloatingImage = ({
 					height: displaySize.height,
 					borderWidth: 8,
 					zIndex,
-					left: centerX + position.x, // 以屏幕中心为基准定位
+					left: centerX + position.x,
 					top: centerY + position.y,
 					rotate: position.rotation,
 					scale: 0.6,
 					opacity: 0,
-					x: dragOffset.x, // 初始拖拽偏移
+					x: dragOffset.x,
 					y: dragOffset.y
 				}}
 				animate={
 					isZoomed
 						? {
-								// 全屏状态：居中、无旋转、放大至适应屏幕、取消拖拽偏移
 								zIndex: TOP_Z_INDEX,
 								left: centerX,
 								top: centerY,
@@ -328,7 +272,6 @@ const FloatingImage = ({
 								borderWidth: maxSM ? 12 : 24
 							}
 						: {
-								// 缩略状态：恢复原始布局与拖拽偏移
 								zIndex,
 								scale: 1,
 								opacity: 1,
@@ -345,20 +288,17 @@ const FloatingImage = ({
 				transition={{ type: 'tween', ease: 'easeOut' }}
 				className={cn(
 					'pointer-events-auto absolute origin-center -translate-1/2 cursor-pointer shadow-xl transition-[scale]',
-					!isEditMode && !isZoomed && 'hover:scale-105' // 非编辑非全屏时 hover 微放大
+					!isEditMode && !isZoomed && 'hover:scale-105'
 				)}>
-				{/* 图片本身 */}
 				<motion.img
 					src={url}
 					onLoad={event => {
 						const img = event.currentTarget
-						// 获取图片原始尺寸
 						setOriginalSize({ width: img.naturalWidth, height: img.naturalHeight })
 					}}
 					draggable={false}
 					className={cn('h-full w-full object-cover select-none')}
 				/>
-				{/* 编辑模式下的删除按钮 */}
 				{isEditMode && !isZoomed && (
 					<motion.button
 						initial={{ opacity: 0, scale: 0.8 }}
@@ -379,7 +319,6 @@ const FloatingImage = ({
 				)}
 			</motion.div>
 
-			{/* 全屏模式下的描述信息浮层，可拖拽 */}
 			{isZoomed && description && (
 				<motion.div
 					drag
@@ -387,7 +326,6 @@ const FloatingImage = ({
 					dragMomentum={false}
 					className='fixed min-h-[150px] w-[200px] cursor-pointer p-6 shadow'
 					style={{
-						// 背景颜色根据组别循环使用预定义色彩
 						backgroundColor: siteContent.backgroundColors[groupIndex % siteContent.backgroundColors.length],
 						zIndex: TOP_Z_INDEX + 1,
 						right: maxSM ? 12 : centerX / 3,
@@ -403,18 +341,16 @@ const FloatingImage = ({
 	)
 }
 
-// ----------------------------------------------------------------------
-// 基于唯一标识生成稳定位置的算法
-// 使用 Map 缓存，保证相同 url 始终获得相同的坐标，即使组件重新渲染
-// ----------------------------------------------------------------------
+// 基于唯一标识生成稳定的位置
+// 使用 ref 存储稳定的位置映射
 const positionCacheRef = new Map<string, PositionedItem>()
 const getStablePosition = (uniqueId: string, width: number, height: number): PositionedItem => {
-	// 如果已有缓存，直接返回，保证位置不变
+	// 如果已有缓存，直接返回
 	if (positionCacheRef.has(uniqueId)) {
 		return positionCacheRef.get(uniqueId)!
 	}
 
-	// 通过字符串哈希生成稳定的整数（32位）
+	// 使用 uniqueId 的哈希值来生成稳定的索引
 	let hash = 0
 	for (let i = 0; i < uniqueId.length; i++) {
 		const char = uniqueId.charCodeAt(i)
@@ -423,12 +359,10 @@ const getStablePosition = (uniqueId: string, width: number, height: number): Pos
 	}
 	const stableIndex = Math.abs(hash) % 10000
 
-	// 计算最大分布半径，保证图片不超出可视区域
 	const maxRadius = Math.min(width, height) / 2 - 100
-	// 使用黄金角度（约 137.5°）生成类似向日葵种子的螺旋分布
 	const goldenAngle = Math.PI * (3 - Math.sqrt(5))
 
-	// 将稳定索引映射到 [0,1) 区间，通过幂函数控制径向分布（越外层间距越大）
+	// 使用稳定索引来计算位置，而不是数组索引
 	const t = (stableIndex % 1000) / 1000
 	const radius = Math.pow(t, 0.8) * maxRadius
 	const angle = stableIndex * goldenAngle
@@ -436,13 +370,12 @@ const getStablePosition = (uniqueId: string, width: number, height: number): Pos
 	const baseX = radius * Math.cos(angle)
 	const baseY = radius * Math.sin(angle)
 
-	// 基于相同哈希生成稳定的小范围随机偏移（jitter），避免完全规则的排列
+	// 使用 uniqueId 生成稳定的 jitter，确保每次都是相同的位置
 	const jitterSeed = Math.abs(hash) % 1000
 	const jitterRadius = 12
 	const jitterX = (jitterSeed % (jitterRadius * 2)) - jitterRadius
 	const jitterY = ((jitterSeed * 7) % (jitterRadius * 2)) - jitterRadius
 
-	// 同样基于哈希生成 -30° 到 30° 之间的稳定旋转角度
 	const rotation = ((jitterSeed * 13) % 60) - 30
 
 	const position = {
@@ -455,27 +388,19 @@ const getStablePosition = (uniqueId: string, width: number, height: number): Pos
 	return position
 }
 
-// ----------------------------------------------------------------------
-// 随机布局容器组件（RandomLayout）
-// 负责扁平化图片数据 -> 计算每张图的稳定位置 -> 渲染 FloatingImage 列表
-// ----------------------------------------------------------------------
 export const RandomLayout = ({ pictures, isEditMode = false, onDeleteSingle, onDeleteGroup }: RandomLayoutProps) => {
-	// 确保屏幕中心坐标已初始化（通常在 _app 或 layout 中调用）
 	useCenterInit()
 	const { width, height } = useCenterStore()
 	const [show, setShow] = useState(false)
 
-	// 延迟显示，确保渐入动画在布局稳定后触发
 	useEffect(() => {
 		setTimeout(() => {
 			setShow(true)
 		}, 1000)
 	}, [])
 
-	// 扁平化图片列表
 	const urls = useMemo(() => buildUrlList(pictures), [pictures])
 
-	// 构建 picture id 到 Picture 对象的映射，用于整组删除等操作
 	const pictureMap = useMemo(() => {
 		const map = new Map<string, Picture>()
 		pictures.forEach(picture => {
@@ -484,14 +409,12 @@ export const RandomLayout = ({ pictures, isEditMode = false, onDeleteSingle, onD
 		return map
 	}, [pictures])
 
-	// 缺少必要数据时不渲染
 	if (!urls.length || !width || !height) {
 		return null
 	}
 
 	if (!show) return null
 
-	// 初始化全局 z-index 计数器，确保新渲染的图片层级高于上一次渲染
 	lastZIndex = urls.length + 11
 
 	return (
@@ -499,7 +422,6 @@ export const RandomLayout = ({ pictures, isEditMode = false, onDeleteSingle, onD
 			{urls.map((item, index) => {
 				const picture = pictureMap.get(item.pictureId)
 				const uniqueId = item.url
-				// 获取稳定的随机位置
 				const position = getStablePosition(uniqueId, width, height)
 
 				return (

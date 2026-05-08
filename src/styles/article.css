@@ -1,3 +1,4 @@
+/* 全局文章内容样式（适用于 .prose 容器） */
 .prose {
 	line-height: 1.8;
 	color: inherit;
@@ -8,7 +9,7 @@
 	overflow: hidden;
 }
 
-/* Headings */
+/* ========== 标题样式 ========== */
 .prose h1,
 .prose h2,
 .prose h3 {
@@ -17,9 +18,10 @@
 	margin-top: 2em;
 	margin-bottom: 1.5em;
 
+	/* 标题前添加装饰符号，使用主题色 */
 	&::before {
 		content: '# ';
-		@apply text-brand/60;
+		@apply text-brand/60;  /* Tailwind 自定义颜色，需在配置中定义 */
 	}
 }
 .prose h1 {
@@ -54,29 +56,30 @@
 	}
 }
 
-/* Paragraph */
+/* ========== 段落 ========== */
 .prose p {
 	margin: 1.25em 0;
 }
 
+/* 强调文本（加粗） */
 .prose strong {
 	font-weight: 600;
-	color: var(--color-brand);
+	color: var(--color-brand);  /* 需在 CSS 变量中定义 --color-brand */
 	margin: 0 0.25em;
 }
 
-/* Links */
+/* ========== 链接 ========== */
 .prose a {
 	text-decoration: underline;
 	text-underline-offset: 2px;
-	color: var(--color-blue-500);
+	color: var(--color-blue-500);  /* 需定义 --color-blue-500 */
 	font-weight: 500;
 }
 .prose a:hover {
 	opacity: 0.9;
 }
 
-/* Lists */
+/* ========== 列表 ========== */
 .prose ul,
 .prose ol {
 	margin: 0.75em 0 0.75em 1.25em;
@@ -91,7 +94,7 @@
 	margin: 0.35em 0;
 }
 
-/* Task Lists */
+/* ========== 任务列表（待办清单） ========== */
 .prose li.task-list-item {
 	list-style-type: none;
 	margin-left: -1.25em;
@@ -106,14 +109,14 @@
 	flex-shrink: 0;
 }
 
-/* Code */
+/* ========== 代码块与行内代码 ========== */
 .prose code {
-	@apply bg-brand-secondary/8;
+	@apply bg-brand-secondary/8;  /* Tailwind 自定义背景色 */
 	border: 1px solid rgba(0, 0, 0, 0.06);
 	padding: 0.15em 0.4em;
 	border-radius: 6px;
 	font-size: 0.9em;
-	font-family: var(--font-mono);
+	font-family: var(--font-mono);  /* 需定义等宽字体变量 */
 }
 .prose pre {
 	border: 1px solid rgba(0, 0, 0, 0.06);
@@ -125,6 +128,7 @@
 	width: 100%;
 	display: block;
 }
+/* 预置代码块内的行内代码样式重置 */
 .prose pre code {
 	background: transparent !important;
 	border: 0;
@@ -133,7 +137,7 @@
 	tab-size: 2;
 }
 
-/* Code Block with Copy Button */
+/* ========== 带复制按钮的代码块包装器 ========== */
 .prose .code-block-wrapper {
 	position: relative;
 	margin: 1em 0 2em;
@@ -143,6 +147,7 @@
 	margin: 0;
 }
 
+/* 复制按钮默认透明，悬停时显示 */
 .prose .code-block-copy-btn {
 	position: absolute;
 	top: 0.75rem;
@@ -175,7 +180,7 @@
 	transform: scale(0.95);
 }
 
-/* Images */
+/* ========== 图片 ========== */
 .prose img {
 	max-width: 40%;
 	margin: 1.5em auto;
@@ -183,10 +188,10 @@
 	border-radius: 12px;
 	border: 1px solid rgba(0, 0, 0, 0.1);
 
-	@apply max-sm:max-w-full;
+	@apply max-sm:max-w-full;  /* Tailwind 响应式工具 */
 }
 
-/* Blockquote */
+/* ========== 引用块 ========== */
 .prose blockquote {
 	border-left: 3px solid var(--color-brand);
 	background: rgba(0, 0, 0, 0.03);
@@ -195,14 +200,14 @@
 	border-radius: 8px;
 }
 
-/* HR */
+/* ========== 分隔线 ========== */
 .prose hr {
 	border: 0;
 	border-top: 1px solid rgba(0, 0, 0, 0.08);
 	margin: 1.5em 0;
 }
 
-/* Tables */
+/* ========== 表格 ========== */
 .prose table {
 	width: 100%;
 	border-collapse: collapse;
@@ -219,11 +224,12 @@
 	font-weight: 600;
 }
 
-/* Anchor offset for in-page headings */
+/* ========== 锚点偏移（用于固定头部导航时避免被遮挡） ========== */
 .prose [id] {
 	scroll-margin-top: 100px;
 }
 
+/* ========== 嵌入内容（如 iframe） ========== */
 .prose iframe {
 	border: 1px solid rgba(0, 0, 0, 0.08);
 	border-radius: 8px;

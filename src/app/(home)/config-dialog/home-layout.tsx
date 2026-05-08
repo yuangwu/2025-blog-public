@@ -1,10 +1,10 @@
-// 声明这是一个客户端组件（在 Next.js App Router 中用于标记该组件只在浏览器端运行）
 'use client'
+// 声明这是一个客户端组件（在 Next.js App Router 中用于标记该组件只在浏览器端运行）
 
-import { motion } from 'motion/react' // 动画库 motion 的导入（当前代码中未直接使用，可能为后续动画预留）
-import { useConfigStore, type CardStyles } from '../stores/config-store' // 全局配置状态管理，导入卡片样式类型
-import { useLayoutEditStore } from '../stores/layout-edit-store' // 布局编辑状态管理
-import cardStylesDefault from '@/config/card-styles-default.json' // 默认卡片样式配置
+import { motion } from 'motion/react' 
+import { useConfigStore, type CardStyles } from '../stores/config-store'
+import { useLayoutEditStore } from '../stores/layout-edit-store'
+import cardStylesDefault from '@/config/card-styles-default.json'
 
 // 卡片名称映射表，用于将英文 key 转换为中文显示名称
 const CARD_LABELS: Record<string, string> = {
@@ -25,9 +25,12 @@ const CARD_LABELS: Record<string, string> = {
 
 // HomeLayout 组件的 Props 类型定义
 interface HomeLayoutProps {
-	cardStylesData: CardStyles // 当前编辑中的卡片样式数据（通常由父组件状态管理）
-	setCardStylesData: React.Dispatch<React.SetStateAction<CardStyles>> // 更新卡片样式数据的函数
-	onClose?: () => void // 可选的关闭回调，例如用于关闭面板或弹窗
+	cardStylesData: CardStyles
+	// 当前编辑中的卡片样式数据（通常由父组件状态管理）
+	setCardStylesData: React.Dispatch<React.SetStateAction<CardStyles>>
+	// 更新卡片样式数据的函数
+	onClose?: () => void
+	// 可选的关闭回调，例如用于关闭面板或弹窗
 }
 
 /**

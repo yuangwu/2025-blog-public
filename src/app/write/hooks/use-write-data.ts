@@ -5,12 +5,13 @@ import { useWriteStore } from '../stores/write-store'
 export function useWriteData() {
 	const { form, images } = useWriteStore()
 
-	// Replace local-image placeholders with preview URLs
+	// 将本地图片占位符替换为预览URL
 	const processedMarkdown = useMemo(() => {
 		let mdForPreview = form.md
 		for (const img of images) {
 			if (img.type === 'file') {
 				const placeholder = `local-image:${img.id}`
+				// 使用 split + join 安全替换所有出现的占位符（避免正则特殊字符问题）
 				mdForPreview = mdForPreview.split(`(${placeholder})`).join(`(${img.previewUrl})`)
 			}
 		}

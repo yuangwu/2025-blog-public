@@ -135,9 +135,11 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 		try {
 			return katex.renderToString(content, {
 				displayMode,
-				throwOnError: false,  // 出错不抛异常，返回错误信息
+				throwOnError: false,
+				// 出错不抛异常，返回错误信息
 				output: 'html',
-				strict: 'ignore'      // 忽略严格模式下的警告
+				strict: 'ignore'
+				// 忽略严格模式下的警告
 			})
 		} catch {
 			// 极端情况下的兜底

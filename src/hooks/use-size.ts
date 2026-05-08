@@ -6,13 +6,20 @@ import { create } from 'zustand'
 
 // 定义 store 的状态类型
 type SizeState = {
-	init: boolean   // 是否已完成初始化（客户端首次计算尺寸）
-	maxXL: boolean  // 宽度 < 1280px
-	maxLG: boolean  // 宽度 < 1024px
-	maxMD: boolean  // 宽度 < 768px
-	maxSM: boolean  // 宽度 < 640px
-	maxXS: boolean  // 宽度 < 360px
-	recalc: () => void // 手动触发重新计算尺寸的方法
+	init: boolean
+	// 是否已完成初始化（客户端首次计算尺寸）
+	maxXL: boolean
+	// 宽度 < 1280px
+	maxLG: boolean
+	// 宽度 < 1024px
+	maxMD: boolean
+	// 宽度 < 768px
+	maxSM: boolean
+	// 宽度 < 640px
+	maxXS: boolean
+	// 宽度 < 360px
+	recalc: () => void
+	// 手动触发重新计算尺寸的方法
 }
 
 // 初始默认状态（服务端或未计算时使用）

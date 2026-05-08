@@ -76,7 +76,8 @@ export function useMarkdownRender(markdown: string): MarkdownRenderResult {
 							codeBlocks.push({
 								placeholder,
 								code,
-								preHtml: `${content}` // 保留 <pre> 内部原始 HTML（例如语法高亮的 <span>）
+								preHtml: `${content}`
+								// 保留 <pre> 内部原始 HTML（例如语法高亮的 <span>）
 							})
 							return placeholder
 						}
@@ -158,7 +159,8 @@ export function useMarkdownRender(markdown: string): MarkdownRenderResult {
 		return () => {
 			cancelled = true
 		}
-	}, [markdown]) // 依赖 markdown，内容变化时重新渲染
+	}, [markdown])
+	// 依赖 markdown，内容变化时重新渲染
 
 	return { content, toc, loading }
 }

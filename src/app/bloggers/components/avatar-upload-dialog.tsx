@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
 // 导入博主网格视图组件及其 Blogger 类型
-import GridView, { type Blogger } from './grid-view'
+// ✅ 默认导入名称改为 CategoryModal（与 grid-view.tsx 实际导出一致）
+import CategoryModal, { type Blogger } from './grid-view'
 // 创建博主对话框组件
 import CreateDialog from './components/create-dialog'
 // 推送博主数据到 GitHub 的服务函数
@@ -178,8 +179,8 @@ export default function Page() {
 				}}
 			/>
 
-			{/* 博主网格视图，传递更新和删除回调 */}
-			<GridView bloggers={bloggers} isEditMode={isEditMode} onUpdate={handleUpdate} onDelete={handleDelete} />
+			{/* ✅ 组件名改为与导入一致 */}
+			<CategoryModal bloggers={bloggers} isEditMode={isEditMode} onUpdate={handleUpdate} onDelete={handleDelete} />
 
 			{/* 右上角操作按钮栏，移动端隐藏 */}
 			<motion.div

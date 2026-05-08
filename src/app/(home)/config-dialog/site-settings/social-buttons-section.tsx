@@ -1,17 +1,11 @@
-// 标记该组件为 React 客户端组件（Next.js 13+ App Router 特性）
 'use client'
+// 标记该组件为客户端组件（用于 Next.js App Router）
 
-// 导入 React 的 useRef Hook，用于创建可变引用
 import { useRef } from 'react'
-// 导入 Sonner 库的 toast 方法，用于显示提示消息
 import { toast } from 'sonner'
-// 导入类型定义：站点内容配置
 import type { SiteContent } from '../../stores/config-store'
-// 导入自定义的 Select 选择器组件
 import { Select } from '@/components/select'
-// 导入类型定义：社交按钮图片上传状态
 import type { SocialButtonImageUploads } from './types'
-// 导入工具函数：用于计算文件的 SHA256 哈希值
 import { hashFileSHA256 } from '@/lib/file-utils'
 
 // 定义社交按钮支持的平台类型联合类型
@@ -76,10 +70,12 @@ export function SocialButtonsSection({
 		// 创建新按钮的默认配置
 		const newButton = {
 			id: newId,
-			type: 'link' as const, // 默认类型为通用链接
+			type: 'link' as const,
+			// 默认类型为通用链接
 			value: '',
 			label: '',
-			order: buttons.length + 1 // 顺序默认为当前末尾
+			order: buttons.length + 1
+			// 顺序默认为当前末尾
 		}
 		// 更新 formData 状态，添加新按钮
 		setFormData(prev => ({

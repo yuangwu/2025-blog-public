@@ -1,482 +1,550 @@
-'use client' // 标记为客户端组件，因为使用了状态、事件和浏览器API
+'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { motion } from 'motion/react'
-import { Play, Pause, RotateCcw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ANIMATION_DELAY, INIT_DELAY } from '@/consts' // 动画相关常量
+import { DialogModal } from '@/components/dialog-modal' // 对比图的模态框组件
 
-// 计时模式：秒表(stopwatch) 或 倒计时(timer)
-type TimerMode = 'stopwatch' | 'timer'
+/** 转换后的图片元数据 */
+type ConvertedMeta = {
+	url: string    // 转换后图片的本地预览地址 (blob URL)
+	size: number   // 转换后图片的文件大小 (字节)
+}
 
-// 时钟页面主组件
-export default function ClockPage() {
-	// 当前计时模式
-	const [mode, setMode] = useState<TimerMode>('stopwatch')
-	// 秒表已经累计的毫秒数
-	const [stopwatchTime, setStopwatchTime] = useState(0)
-	// 倒计时剩余的毫秒数
-	const [timerTime, setTimerTime] = useState(0)
-	// 倒计时设置的时、分、秒
-	const [timerInput, setTimerInput] = useState({ hours: 0, minutes: 0, seconds: 0 })
-	// 是否正在计时
-	const [isRunning, setIsRunning] = useState(false)
-	// 秒表计次记录数组
-	const [laps, setLaps] = useState<number[]>([])
-	// 保存 requestAnimationFrame 返回的 id
-	const intervalRef = useRef<number | null>(null)
-	// 记录计时开始的 performance.now() 时间戳（用于计算已经过的时间）
-	const startTimeRef = useRef<number | null>(null)
-	// 暂停时保存已经过的时间（秒表用）
-	const pausedTimeRef = useRef<number>(0)
-	// 倒计时初始设置的总毫秒数
-	const initialTimerTimeRef = useRef<number>(0)
-	// ref 同步最新的秒表毫秒数（避免闭包旧值问题）
-	const stopwatchTimeRef = useRef<number>(0)
-	// ref 同步最新的倒计时毫秒数
-	const timerTimeRef = useRef<number>(0)
+/** 已选择的单张图片信息 */
+type SelectedImage = {
+	file: File             // 原始文件对象
+	preview: string        // 原图的本地预览地址 (blob URL)
+	width: number          // 原图宽度
+	height: number         // 原图高度
+	converted?: ConvertedMeta // 转换后的信息 (可选)
+	converting?: boolean   // 是否正在转换中
+}
 
-	// 同步 refs 与 state，确保在动画帧回调中拿到最新值
-	stopwatchTimeRef.current = stopwatchTime
-	timerTimeRef.current = timerTime
+/** 文件名展示的最大长度 */
+const MAX_NAME_LENGTH = 32
 
-	// 根据 isRunning 和 mode 的变化启动/停止计时
+/**
+ * 获取文件扩展名 (包含点)
+ * @param name 文件名
+ * @returns 扩展名，如 ".png"，若没有则返回空字符串
+ */
+function getFileExtension(name: string) {
+	const idx = name.lastIndexOf('.')
+	return idx >= 0 ? name.slice(idx) : ''
+}
+
+/**
+ * 格式化文件名用于展示，超出长度自动截断并添加省略号
+ * @param name 原始文件名
+ * @returns 格式化后的文件名
+ */
+function formatFileName(name: string) {
+	if (name.length <= MAX_NAME_LENGTH) return name
+	const ext = getFileExtension(name)
+	if (!ext) {
+		return `${name.slice(0, MAX_NAME_LENGTH - 3)}...`
+	}
+	// 保留扩展名完整性，截取基本文件名部分
+	const maxBaseLength = Math.max(1, MAX_NAME_LENGTH - ext.length - 3)
+	return `${name.slice(0, maxBaseLength)}...${ext}`
+}
+
+/**
+ * 格式化字节大小为可读字符串
+ * @param bytes 字节数
+ * @returns 格式化后的字符串，如 "2.5 MB"
+ */
+function formatBytes(bytes: number) {
+	if (bytes < 1024) return `${bytes.toFixed(0)} B`
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+	return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}
+
+/**
+ * 将图片文件转换为 WebP 格式
+ * @param file 原始图片文件
+ * @param quality 转换质量 (0-1)
+ * @param maxWidth 可选的最大宽度，超过则等比缩放
+ * @returns 转换后的 Blob 对象
+ */
+async function fileToWebp(file: File, quality: number, maxWidth?: number) {
+	const bitmap = await createImageBitmap(file) // 解码图片
+	const canvas = document.createElement('canvas')
+
+	let width = bitmap.width
+	let height = bitmap.height
+
+	// 如果指定了最大宽度且原图宽度超过，则等比缩放
+	if (maxWidth && width > maxWidth) {
+		const ratio = maxWidth / width
+		width = maxWidth
+		height = Math.round(height * ratio)
+	}
+
+	canvas.width = width
+	canvas.height = height
+	const ctx = canvas.getContext('2d')
+	if (!ctx) throw new Error('无法初始化画布')
+	ctx.drawImage(bitmap, 0, 0, width, height)
+
+	// 通过 canvas 输出为 WebP blob
+	const blob = await new Promise<Blob>((resolve, reject) => {
+		canvas.toBlob(
+			result => {
+				if (result) resolve(result)
+				else reject(new Error('无法生成 WEBP 文件'))
+			},
+			'image/webp',
+			quality
+		)
+	})
+	return blob
+}
+
+export default function Page() {
+	// ========== 状态管理 ==========
+	const [images, setImages] = useState<SelectedImage[]>([])   // 已选择的图片列表
+	const [quality, setQuality] = useState(0.8)                // WebP 转换质量
+	const [limitMaxWidth, setLimitMaxWidth] = useState(false)  // 是否限制最大宽度
+	const [maxWidth, setMaxWidth] = useState(1200)             // 最大宽度值
+	const [batchConverting, setBatchConverting] = useState(false) // 是否正在批量转换
+	const [compareIndex, setCompareIndex] = useState<number | null>(null) // 当前对比的图片索引
+	const [isDragging, setIsDragging] = useState(false)       // 是否正在拖拽文件进入区域
+
+	const hasImages = images.length > 0                        // 是否有图片
+	const hasConvertible = images.length > 0                   // 存在可转换的图片（数量 > 0）
+	const hasConverted = images.some(item => !!item.converted) // 是否存在已转换完成的图片
+
+	// 使用 ref 保存最新的图片列表，避免闭包陈旧引用问题（主要用于批量转换循环）
+	const imagesRef = useRef<SelectedImage[]>([])
+	// 拖拽计数器，用于处理子元素触发多次 enter/leave 的问题
+	const dragCounterRef = useRef(0)
+
+	// 同步最新 images 到 ref
 	useEffect(() => {
-		if (isRunning) {
-			const now = performance.now() // 当前高精度时间戳
-			if (startTimeRef.current === null) {
-				// 首次开始计时
-				startTimeRef.current = now
-				if (mode === 'timer') {
-					// 倒计时模式记录初始值
-					initialTimerTimeRef.current = timerTimeRef.current
+		imagesRef.current = images
+	}, [images])
+
+	// ========== 文件处理 ==========
+	/**
+	 * 处理用户选择的文件列表
+	 * @param fileList 从 input 或拖拽事件来的文件列表
+	 */
+	const handleFiles = useCallback(async (fileList: FileList | null) => {
+		if (!fileList?.length) return
+		// 过滤掉非图片文件
+		const files = Array.from(fileList).filter(file => file.type.startsWith('image/'))
+		if (!files.length) return
+
+		// 并行读取每张图片的尺寸并创建预览 URL
+		const nextItems = await Promise.all(
+			files.map(async file => {
+				const preview = URL.createObjectURL(file)
+				const bitmap = await createImageBitmap(file) // 获取宽高
+				return {
+					file,
+					preview,
+					width: bitmap.width,
+					height: bitmap.height
 				}
-			} else {
-				// 从暂停中恢复计时
-				if (mode === 'stopwatch') {
-					// 秒表：新的起点 = 当前时间 - 已暂停时间
-					startTimeRef.current = now - pausedTimeRef.current
+			})
+		)
+
+		// 更新列表，重名/同大小的文件去重
+		setImages(prev => {
+			const deduped = [...prev]
+			nextItems.forEach(item => {
+				const exists = deduped.some(existing => {
+					return existing.file.name === item.file.name && existing.file.size === item.file.size && existing.file.lastModified === item.file.lastModified
+				})
+				if (!exists) {
+					deduped.push(item)
 				} else {
-					// 倒计时：起点 = 当前时间 - (初始时长 - 剩余时长)
-					startTimeRef.current = now - (initialTimerTimeRef.current - timerTimeRef.current)
+					// 如果重复，释放刚创建的预览 URL，避免内存泄漏
+					URL.revokeObjectURL(item.preview)
 				}
-			}
+			})
+			return deduped
+		})
+	}, [])
 
-			// 用 requestAnimationFrame 不断更新显示时间
-			const updateTime = () => {
-				const currentTime = performance.now()
-				const elapsed = currentTime - startTimeRef.current! // 已经过的时间
+	// ========== 拖拽事件处理 ==========
+	const handleDragEnter = useCallback((event: DragEvent<HTMLLabelElement>) => {
+		event.preventDefault()
+		event.stopPropagation()
+		dragCounterRef.current += 1
+		setIsDragging(true)
+	}, [])
 
-				if (mode === 'stopwatch') {
-					// 秒表模式：设置累计时间
-					setStopwatchTime(Math.floor(elapsed))
-				} else {
-					// 倒计时模式：计算剩余时间
-					const remaining = initialTimerTimeRef.current - elapsed
-					if (remaining <= 0) {
-						// 倒计时结束
-						setTimerTime(0)
-						setIsRunning(false)
-						startTimeRef.current = null
-						return
-					}
-					setTimerTime(Math.floor(remaining))
-				}
+	const handleDragOver = useCallback((event: DragEvent<HTMLLabelElement>) => {
+		event.preventDefault()
+		event.stopPropagation()
+	}, [])
 
-				// 继续下一帧更新
-				intervalRef.current = requestAnimationFrame(updateTime)
-			}
-
-			intervalRef.current = requestAnimationFrame(updateTime)
-		} else {
-			// 停止状态：清除动画帧
-			if (intervalRef.current !== null) {
-				cancelAnimationFrame(intervalRef.current)
-				intervalRef.current = null
-			}
-			// 暂停时保存当前已过时间用于后续恢复
-			if (startTimeRef.current !== null) {
-				if (mode === 'stopwatch') {
-					pausedTimeRef.current = stopwatchTimeRef.current
-				}
-			}
+	const handleDragLeave = useCallback((event: DragEvent<HTMLLabelElement>) => {
+		event.preventDefault()
+		event.stopPropagation()
+		dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
+		if (dragCounterRef.current === 0) {
+			setIsDragging(false)
 		}
+	}, [])
 
-		// 组件卸载或依赖变化时清理动画帧
+	const handleDrop = useCallback(
+		(event: DragEvent<HTMLLabelElement>) => {
+			event.preventDefault()
+			event.stopPropagation()
+			setIsDragging(false)
+			dragCounterRef.current = 0
+			handleFiles(event.dataTransfer?.files ?? null)
+		},
+		[handleFiles]
+	)
+
+	// 计算所有图片总大小
+	const totalSize = useMemo(() => {
+		const bytes = images.reduce((acc, item) => acc + item.file.size, 0)
+		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+		return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+	}, [images])
+
+	// ========== 转换单张图片 ==========
+	const handleConvertImage = useCallback(
+		async (index: number) => {
+			const target = images[index]
+			if (!target || target.converting) return
+
+			// 标记为“转换中”
+			setImages(prev => prev.map((item, idx) => (idx === index ? { ...item, converting: true } : item)))
+			try {
+				const blob = await fileToWebp(target.file, quality, limitMaxWidth ? maxWidth : undefined)
+				const url = URL.createObjectURL(blob)
+				setImages(prev =>
+					prev.map((item, idx) => {
+						if (idx !== index) return item
+						// 如果之前有转换结果，释放旧的 blob URL
+						if (item.converted?.url) {
+							URL.revokeObjectURL(item.converted.url)
+						}
+						return {
+							...item,
+							converting: false,
+							converted: {
+								url,
+								size: blob.size
+							}
+						}
+					})
+				)
+			} catch (error) {
+				console.error(error)
+				alert('转换过程中出现问题，请稍后再试')
+				// 转换失败恢复状态
+				setImages(prev => prev.map((item, idx) => (idx === index ? { ...item, converting: false } : item)))
+			}
+		},
+		[images, quality, limitMaxWidth, maxWidth]
+	)
+
+	// ========== 下载单张转换后的图片 ==========
+	const handleDownloadImage = useCallback(
+		(index: number) => {
+			const target = images[index]
+			if (!target?.converted) return
+			const link = document.createElement('a')
+			const baseName = target.file.name.replace(/\.[^.]+$/, '') // 去掉原扩展名
+			link.href = target.converted.url
+			link.download = `${baseName}.webp`
+			document.body.appendChild(link)
+			link.click()
+			link.remove()
+		},
+		[images]
+	)
+
+	// ========== 批量转换所有图片 ==========
+	const handleConvertAll = useCallback(async () => {
+		if (!hasImages || batchConverting) return
+		setBatchConverting(true)
+		try {
+			// 使用 ref 避免闭包陈旧问题，依次转换
+			for (let i = 0; i < imagesRef.current.length; i += 1) {
+				const current = imagesRef.current[i]
+				if (!current) continue
+				// 标记当前图片为转换中
+				setImages(prev => prev.map((item, idx) => (idx === i ? { ...item, converting: true } : item)))
+				const blob = await fileToWebp(current.file, quality, limitMaxWidth ? maxWidth : undefined)
+				const url = URL.createObjectURL(blob)
+				setImages(prev =>
+					prev.map((item, idx) => {
+						if (idx !== i) return item
+						if (item.converted?.url) {
+							URL.revokeObjectURL(item.converted.url)
+						}
+						return {
+							...item,
+							converting: false,
+							converted: {
+								url,
+								size: blob.size
+							}
+						}
+					})
+				)
+			}
+		} catch (error) {
+			console.error(error)
+			alert('批量转换过程中出现问题，请稍后再试')
+		} finally {
+			setBatchConverting(false)
+		}
+	}, [batchConverting, hasImages, quality, limitMaxWidth, maxWidth])
+
+	// ========== 下载全部已转换的图片 ==========
+	const handleDownloadAll = useCallback(() => {
+		if (!hasConverted) return
+		images.forEach(item => {
+			if (!item.converted) return
+			const link = document.createElement('a')
+			const baseName = item.file.name.replace(/\.[^.]+$/, '')
+			link.href = item.converted.url
+			link.download = `${baseName}.webp`
+			document.body.appendChild(link)
+			link.click()
+			link.remove()
+		})
+	}, [images, hasConverted])
+
+	// ========== 移除图片 ==========
+	const handleRemoveImage = useCallback((index: number) => {
+		setImages(prev => {
+			const next = [...prev]
+			const removed = next.splice(index, 1)[0]
+			if (removed) {
+				// 释放 blob URL 避免内存泄漏
+				URL.revokeObjectURL(removed.preview)
+				if (removed.converted?.url) {
+					URL.revokeObjectURL(removed.converted.url)
+				}
+			}
+			return next
+		})
+	}, [])
+
+	// ========== 图片对比功能 ==========
+	const handleCompareImage = useCallback((index: number) => {
+		setCompareIndex(index)
+	}, [])
+
+	const handleCloseCompare = useCallback(() => {
+		setCompareIndex(null)
+	}, [])
+
+	// 组件卸载时清理所有 blob URL
+	useEffect(() => {
 		return () => {
-			if (intervalRef.current !== null) {
-				cancelAnimationFrame(intervalRef.current)
-			}
+			imagesRef.current.forEach(item => {
+				URL.revokeObjectURL(item.preview)
+				if (item.converted?.url) {
+					URL.revokeObjectURL(item.converted.url)
+				}
+			})
 		}
-	}, [isRunning, mode])
+	}, [])
 
-	// 开始/暂停按钮
-	const handleStartPause = () => {
-		// 倒计时模式下如果当前时间为0，则根据输入设置初始倒计时
-		if (mode === 'timer' && timerTime === 0) {
-			const totalMs = timerInput.hours * 3600000 + timerInput.minutes * 60000 + timerInput.seconds * 1000
-			if (totalMs <= 0) return // 未设置有效时间，不启动
-			setTimerTime(totalMs)
-			initialTimerTimeRef.current = totalMs
-		}
-		if (!isRunning) {
-			// 从停止到运行，将起点标记为未设置，让 effect 重新计算
-			startTimeRef.current = null
-		}
-		// 切换运行状态
-		setIsRunning(prev => !prev)
-	}
-
-	// 重置按钮
-	const handleReset = () => {
-		setIsRunning(false)
-		startTimeRef.current = null
-		pausedTimeRef.current = 0
-		initialTimerTimeRef.current = 0
-		if (mode === 'stopwatch') {
-			setStopwatchTime(0)
-			setLaps([]) // 清除计次
-		} else {
-			setTimerTime(0)
-			setTimerInput({ hours: 0, minutes: 0, seconds: 0 })
-		}
-	}
-
-	// 秒表计次按钮（只在秒表运行时可用）
-	const handleLap = () => {
-		if (mode === 'stopwatch' && isRunning) {
-			setLaps(prev => [stopwatchTime, ...prev]) // 新计次记录插在最前面
-		}
-	}
-
-	// 将毫秒格式化为 HH:MM:SS.ms 或 MM:SS.ms
-	const formatTime = (ms: number) => {
-		const totalSeconds = Math.floor(ms / 1000)
-		const hours = Math.floor(totalSeconds / 3600)
-		const minutes = Math.floor((totalSeconds % 3600) / 60)
-		const seconds = totalSeconds % 60
-		const milliseconds = Math.floor((ms % 1000) / 10) // 取百分秒（10ms级）
-
-		if (hours > 0) {
-			return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`
-		}
-		return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`
-	}
-
-	// 当前显示的时间（根据模式切换）
-	const displayTime = mode === 'stopwatch' ? stopwatchTime : timerTime
-	// 是否允许开始（倒计时需设置有效时间）
-	const canStart = mode === 'timer' ? timerTime > 0 || timerInput.hours > 0 || timerInput.minutes > 0 || timerInput.seconds > 0 : true
-
+	// ========== 渲染 ==========
 	return (
-		<div className='flex flex-col items-center px-6 pt-32 pb-12'>
-			{/* 整体容器 - 带淡入放大动画 */}
-			<motion.div
-				initial={{ opacity: 0, scale: 0.9 }}
-				animate={{ opacity: 1, scale: 1 }}
-				className='w-full max-w-[600px] space-y-8'
-			>
-				{/* 模式切换 */}
-				<div className='card relative flex gap-4 rounded-xl p-2'>
-					<motion.button
-						whileHover={{ scale: 1.02 }}
-						whileTap={{ scale: 0.98 }}
-						onClick={() => {
-							// 切换到秒表时重置倒计时相关状态
-							setMode('stopwatch')
-							setIsRunning(false)
-							setTimerTime(0)
-							setTimerInput({ hours: 0, minutes: 0, seconds: 0 })
-							startTimeRef.current = null
-							pausedTimeRef.current = 0
-							initialTimerTimeRef.current = 0
-						}}
-						className={cn(
-							`flex-1 rounded-xl px-4 py-3 text-sm font-medium transition-all`,
-							mode === 'stopwatch' ? 'bg-brand text-white shadow-sm' : 'text-secondary hover:text-brand'
-						)}
-					>
-						秒表
-					</motion.button>
-					<motion.button
-						whileHover={{ scale: 1.02 }}
-						whileTap={{ scale: 0.98 }}
-						onClick={() => {
-							// 切换到倒计时时重置秒表相关状态
-							setMode('timer')
-							setIsRunning(false)
-							setStopwatchTime(0)
-							setLaps([])
-							startTimeRef.current = null
-							pausedTimeRef.current = 0
-							initialTimerTimeRef.current = 0
-						}}
-						className={cn(
-							`flex-1 rounded-xl px-4 py-3 text-sm font-medium transition-all`,
-							mode === 'timer' ? 'bg-brand text-white shadow-sm' : 'text-secondary hover:text-brand'
-						)}
-					>
-						计时器
-					</motion.button>
-				</div>
-
-				{/* 时间显示区域 */}
+		<div className='relative px-6 pt-32 pb-12 text-sm max-sm:pt-28'>
+			<div className='mx-auto flex max-w-3xl flex-col gap-6'>
+				{/* 页面标题区域，带入场动画 */}
 				<motion.div
-					initial={{ opacity: 0, scale: 0.95 }}
+					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
-					className='card relative p-4'
-				>
-					<div className='bg-secondary/20 flex items-center justify-center rounded-4xl p-8'>
-						{/* 使用 key 强制在模式切换时重新渲染七段数码管 */}
-						<TimeDisplay time={displayTime} key={mode} />
-					</div>
+					transition={{ delay: INIT_DELAY }}
+					className='space-y-2 text-center'>
+					<p className='text-secondary text-xs tracking-[0.2em] uppercase'>Image Toolbox</p>
+					<h1 className='text-2xl font-semibold'>PNG / JPG 转 WEBP</h1>
+					<p className='text-secondary'>选择图片 → 调整质量 → 一键转换下载</p>
 				</motion.div>
 
-				{/* 倒计时时间设置（仅在倒计时模式、未运行且时间为0时显示） */}
-				{mode === 'timer' && !isRunning && timerTime === 0 && (
-					<motion.div
-						initial={{ opacity: 0, scale: 0.8 }}
-						animate={{ opacity: 1, scale: 1 }}
-						className='card relative space-y-4'
-					>
-						<div className='flex items-center justify-center gap-4'>
-							{/* 小时输入 */}
-							<div className='flex flex-col items-center gap-2'>
-								<label className='text-secondary text-xs'>时</label>
-								<input
-									type='number'
-									min='0'
-									max='23'
-									value={timerInput.hours}
-									onChange={e =>
-										setTimerInput({
-											...timerInput,
-											hours: Math.max(0, Math.min(23, parseInt(e.target.value) || 0)),
-										})
-									}
-									className='no-spinner w-20 rounded-xl border bg-white/60 px-4 py-3 text-center text-2xl font-bold backdrop-blur-sm focus:bg-white/80'
-								/>
-							</div>
-							<div className='text-secondary mt-8 text-2xl font-bold'>:</div>
-							{/* 分钟输入 */}
-							<div className='flex flex-col items-center gap-2'>
-								<label className='text-secondary text-xs'>分</label>
-								<input
-									type='number'
-									min='0'
-									max='59'
-									value={timerInput.minutes}
-									onChange={e =>
-										setTimerInput({
-											...timerInput,
-											minutes: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)),
-										})
-									}
-									className='no-spinner w-20 rounded-xl border bg-white/60 px-4 py-3 text-center text-2xl font-bold backdrop-blur-sm focus:bg-white/80'
-								/>
-							</div>
-							<div className='text-secondary mt-8 text-2xl font-bold'>:</div>
-							{/* 秒输入 */}
-							<div className='flex flex-col items-center gap-2'>
-								<label className='text-secondary text-xs'>秒</label>
-								<input
-									type='number'
-									min='0'
-									max='59'
-									value={timerInput.seconds}
-									onChange={e =>
-										setTimerInput({
-											...timerInput,
-											seconds: Math.max(0, Math.min(59, parseInt(e.target.value) || 0)),
-										})
-									}
-									className='no-spinner w-20 rounded-xl border bg-white/60 px-4 py-3 text-center text-2xl font-bold backdrop-blur-sm focus:bg-white/80'
-								/>
-							</div>
+				{/* 拖拽/点击上传区域 */}
+				<motion.label
+					initial={{ opacity: 0, scale: 0.9 }}
+					animate={{ opacity: 1, scale: 1 }}
+					transition={{ delay: INIT_DELAY + ANIMATION_DELAY }}
+					onDragEnter={handleDragEnter}
+					onDragOver={handleDragOver}
+					onDragLeave={handleDragLeave}
+					onDrop={handleDrop}
+					className={`group hover:border-brand/20 card relative flex cursor-pointer flex-col items-center justify-center gap-3 text-center transition-colors hover:bg-white/80 ${
+						isDragging ? 'border-brand bg-white' : ''
+					}`}>
+					{/* 隐藏的原生文件选择 input */}
+					<input type='file' accept='image/*' multiple className='hidden' onChange={event => handleFiles(event.target.files)} />
+					<div className='bg-brand/10 text-brand/60 group-hover:bg-brand/10 flex h-20 w-20 items-center justify-center rounded-full text-3xl transition'>
+						📷
+					</div>
+					<div>
+						<p className='text-base font-medium'>点击或拖拽图片</p>
+						<p className='text-secondary text-xs'>支持 PNG、JPG、JPEG、HEIC 等常见格式</p>
+					</div>
+				</motion.label>
+
+				{/* 已选择图片列表 */}
+				{hasImages && (
+					<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className='card relative'>
+						<div className='text-secondary flex items-center justify-between border-b border-slate-200 pb-3 text-xs tracking-[0.2em] uppercase'>
+							<span>已选择 {images.length} 张图片</span>
+							<span>{totalSize}</span>
 						</div>
+						<ul className='divide-y divide-slate-200'>
+							{images.map((item, index) => {
+								const { file, preview, converted, converting } = item
+								return (
+									<li key={`${file.name}-${index}`} className='flex items-center gap-4 py-3'>
+										{/* 缩略图 */}
+										<div className='h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-50'>
+											<img src={preview} alt={file.name} className='h-full w-full object-cover' />
+										</div>
+										{/* 文件信息 */}
+										<div className='flex flex-1 flex-col'>
+											<p className='font-medium'>{formatFileName(file.name)}</p>
+											<p className='text-secondary text-xs'>
+												{item.width} × {item.height} · {formatBytes(file.size)}
+												{converted ? `（转换后 ${formatBytes(converted.size)}）` : ''}
+											</p>
+										</div>
+										{/* 操作按钮 */}
+										<div className='flex flex-wrap justify-end gap-2 text-xs'>
+											<button
+												onClick={() => handleConvertImage(index)}
+												disabled={!!converting}
+												className='rounded-full px-3 py-1 font-medium transition disabled:cursor-not-allowed disabled:text-slate-300'>
+												{converting ? '转换中...' : converted ? '重新转换' : '转换'}
+											</button>
+											{converted ? (
+												<>
+													<button
+														onClick={() => handleCompareImage(index)}
+														className='border-brand text-brand hover:bg-brand/10 rounded-full border px-3 py-1 font-semibold transition'>
+														对比
+													</button>
+													<button
+														onClick={() => handleDownloadImage(index)}
+														className='border-brand text-brand hover:bg-brand/10 rounded-full border px-3 py-1 font-semibold transition'>
+														下载
+													</button>
+												</>
+											) : null}
+											<button
+												onClick={() => handleRemoveImage(index)}
+												className='rounded-full border border-red-200 px-3 py-1 font-medium text-rose-400 transition hover:bg-rose-50'>
+												移除
+											</button>
+										</div>
+									</li>
+								)
+							})}
+						</ul>
 					</motion.div>
 				)}
 
-				{/* 控制按钮区 */}
-				<div className='flex items-center justify-center gap-4'>
-					{/* 秒表计次按钮 （仅秒表模式可见） */}
-					{mode === 'stopwatch' && (
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							onClick={handleLap}
-							disabled={!isRunning} // 未运行时禁用
-							className='flex h-16 w-16 items-center justify-center rounded-full border bg-white/60 text-sm font-medium backdrop-blur-sm transition-all hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50'
-						>
-							计次
-						</motion.button>
-					)}
-					{/* 开始/暂停按钮 */}
-					<motion.button
-						whileHover={{ scale: 1.05 }}
-						whileTap={{ scale: 0.95 }}
-						onClick={handleStartPause}
-						disabled={!canStart} // 倒计时未设置时禁用
-						className={`flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
-							isRunning ? 'bg-brand-secondary hover:bg-brand-secondary/80' : 'bg-brand hover:bg-brand/80'
-						}`}
-					>
-						{isRunning ? <Pause className='h-8 w-8' /> : <Play className='h-8 w-8' />}
-					</motion.button>
-					{/* 重置按钮，秒表运行时有些场景需禁用以防止异常 */}
-					<motion.button
-						whileHover={{ scale: 1.05 }}
-						whileTap={{ scale: 0.95 }}
-						onClick={handleReset}
-						disabled={isRunning && mode === 'stopwatch'}
-						className='flex h-16 w-16 items-center justify-center rounded-full border bg-white/60 backdrop-blur-sm transition-all hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50'
-					>
-						<RotateCcw className='h-5 w-5' />
-					</motion.button>
-				</div>
-
-				{/* 秒表计次记录展示 */}
-				{mode === 'stopwatch' && laps.length > 0 && (
-					<div className='grid grid-cols-3 gap-3'>
-						{laps.map((lap, index) => (
-							<motion.div
-								layout
-								initial={{ opacity: 0, scale: 0.6 }}
-								animate={{ opacity: 1, scale: 1 }}
-								key={lap} // 假设同一时间不会有两笔记录，可优化的点（实际可用 index）
-								className='bg-card flex items-center justify-center rounded-2xl px-6 py-4'
-							>
-								<span className='font-mono text-sm font-medium'>
-									<span className='text-secondary'>{laps.length - index}.</span> {formatTime(lap)}
-								</span>
-							</motion.div>
-						))}
+				{/* 转换设置与批量操作区域 */}
+				<motion.div
+					initial={{ opacity: 0, scale: 0.9 }}
+					animate={{ opacity: 1, scale: 1 }}
+					transition={{ delay: INIT_DELAY + 2 * ANIMATION_DELAY }}
+					className='card relative'>
+					<div className='flex flex-wrap items-center gap-4'>
+						<div className='flex-1 space-y-4'>
+							{/* 质量滑块 */}
+							<div>
+								<p className='text-secondary text-xs tracking-[0.2em] uppercase'>质量</p>
+								<div className='flex items-center gap-3 pt-2'>
+									<input
+										type='range'
+										min={0.3}
+										max={1}
+										step={0.05}
+										value={quality}
+										onChange={event => setQuality(parseFloat(event.target.value))}
+										className='range-track'
+									/>
+									<span className='w-12 text-right text-sm font-medium'>{Math.round(quality * 100)}%</span>
+								</div>
+								<p className='text-xs text-slate-500'>使用 canvas.toDataURL(&apos;image/webp&apos;, &#123;quality.toFixed(2)&#125;)</p>
+							</div>
+							{/* 限制最大宽度选项 */}
+							<div className='flex items-center gap-3'>
+								<div className='flex items-center gap-2'>
+									<input
+										type='checkbox'
+										id='limit-max-width'
+										checked={limitMaxWidth}
+										onChange={event => setLimitMaxWidth(event.target.checked)}
+										className='h-4 w-4 rounded border-slate-300'
+									/>
+									<label htmlFor='limit-max-width' className='text-secondary cursor-pointer text-xs tracking-[0.2em] uppercase'>
+										限制最大宽度
+									</label>
+								</div>
+								{limitMaxWidth && (
+									<div className='flex items-center gap-2'>
+										<input
+											type='number'
+											min={100}
+											max={10000}
+											step={100}
+											value={maxWidth}
+											onChange={event => setMaxWidth(Math.max(100, parseInt(event.target.value) || 1200))}
+											className='w-24 rounded border border-slate-200 px-2 py-1 text-sm'
+										/>
+										<span className='text-xs text-slate-500'>px</span>
+									</div>
+								)}
+							</div>
+						</div>
+						{/* 全局操作按钮 */}
+						<div className='flex flex-wrap gap-2 text-sm'>
+							<button
+								onClick={handleConvertAll}
+								disabled={!hasConvertible || batchConverting}
+								className='rounded-full border border-slate-200 px-4 py-2 font-medium transition disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300'>
+								{batchConverting ? '全部转换中…' : '全部转换'}
+							</button>
+							<button
+								onClick={handleDownloadAll}
+								disabled={!hasConverted}
+								className='border-brand text-brand rounded-full border px-4 py-2 font-semibold transition disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300'>
+								全部下载
+							</button>
+						</div>
 					</div>
-				)}
-			</motion.div>
-		</div>
-	)
-}
+				</motion.div>
+			</div>
 
-// 时间显示组件 props
-interface TimeDisplayProps {
-	time: number // 毫秒
-}
-
-// 负责将时间拆分并用七段数码管展示
-function TimeDisplay({ time }: TimeDisplayProps) {
-	const totalSeconds = Math.floor(time / 1000)
-	const hours = Math.floor(totalSeconds / 3600)
-	const minutes = Math.floor((totalSeconds % 3600) / 60)
-	const seconds = totalSeconds % 60
-	const milliseconds = Math.floor((time % 1000) / 10)
-
-	const hoursStr = hours.toString().padStart(2, '0')
-	const minutesStr = minutes.toString().padStart(2, '0')
-	const secondsStr = seconds.toString().padStart(2, '0')
-	const millisecondsStr = milliseconds.toString().padStart(2, '0')
-
-	return (
-		<div className='flex items-center justify-center gap-1.5'>
-			{/* 只有小时不为0时才显示小时字段 */}
-			{hours > 0 && (
-				<>
-					<SevenSegmentDigit value={parseInt(hoursStr[0])} />
-					<SevenSegmentDigit value={parseInt(hoursStr[1])} />
-					<Colon />
-				</>
+			{/* 原图与转换结果对比模态框 */}
+			{compareIndex !== null && images[compareIndex]?.converted && (
+				<DialogModal open={true} onClose={handleCloseCompare} className='w-full'>
+					<div className='grid w-full grid-cols-2 gap-4' onClick={handleCloseCompare}>
+						{/* 原图 */}
+						<div className='flex flex-col items-end p-4'>
+							<div>
+								<div className='text-secondary text-center text-sm font-medium'>原图 ({formatBytes(images[compareIndex].file.size)})</div>
+								<img src={images[compareIndex].preview} alt='Original' className='mt-3 max-h-[90vh] rounded-xl bg-slate-100' />
+							</div>
+						</div>
+						{/* 转换后 WEBP */}
+						<div className='flex flex-col items-start p-4'>
+							<div>
+								<div className='text-secondary text-center text-sm font-medium'>WEBP ({formatBytes(images[compareIndex].converted!.size)})</div>
+								<img src={images[compareIndex].converted!.url} alt='Converted' className='mt-3 max-h-[90vh] rounded-xl bg-slate-100' />
+							</div>
+						</div>
+					</div>
+				</DialogModal>
 			)}
-			<SevenSegmentDigit value={parseInt(minutesStr[0])} />
-			<SevenSegmentDigit value={parseInt(minutesStr[1])} />
-			<Colon />
-			<SevenSegmentDigit value={parseInt(secondsStr[0])} />
-			<SevenSegmentDigit value={parseInt(secondsStr[1])} />
-			<Colon />
-			<SevenSegmentDigit value={parseInt(millisecondsStr[0])} />
-			<SevenSegmentDigit value={parseInt(millisecondsStr[1])} />
-		</div>
-	)
-}
-
-// 七段数码管单个数字的 props
-interface SevenSegmentDigitProps {
-	value: number // 0-9
-	className?: string
-}
-
-// 七段数码管组件，通过 SVG 绘制七个段
-function SevenSegmentDigit({ value, className }: SevenSegmentDigitProps) {
-	// 数字对应七段亮灭映射（a,b,c,d,e,f,g）
-	const segmentMap = {
-		0: [true, true, true, true, true, true, false],
-		1: [false, true, true, false, false, false, false],
-		2: [true, true, false, true, true, false, true],
-		3: [true, true, true, true, false, false, true],
-		4: [false, true, true, false, false, true, true],
-		5: [true, false, true, true, false, true, true],
-		6: [true, false, true, true, true, true, true],
-		7: [true, true, true, false, false, false, false],
-		8: [true, true, true, true, true, true, true],
-		9: [true, true, true, true, false, true, true],
-	}
-
-	const segments = segmentMap[value as keyof typeof segmentMap] || segmentMap[0]
-	const activeColor = 'var(--color-primary)' // 亮色
-	const inactiveColor = 'rgba(0, 0, 0, 0.05)' // 暗色
-
-	return (
-		<svg
-			width='29'
-			height='52'
-			viewBox='0 0 29 52'
-			fill='none'
-			xmlns='http://www.w3.org/2000/svg'
-			className={className}
-		>
-			{/* 顶部横段 (a) */}
-			<path
-				d='M4.20248 3.49482C2.82797 2.27303 3.69218 0 5.53121 0H22.6867C24.5522 0 25.4019 2.32821 23.975 3.52982L23.5791 3.86316C23.2186 4.16681 22.7623 4.33333 22.2909 4.33333H5.90621C5.41638 4.33333 4.94359 4.15358 4.57748 3.82815L4.20248 3.49482Z'
-				fill={segments[0] ? activeColor : inactiveColor}
-			/>
-			{/* 中间横段 (g) */}
-			<path
-				d='M3.85122 24.13C4.16644 23.936 4.5293 23.8333 4.89942 23.8333H23.3022C23.6503 23.8333 23.9923 23.9242 24.2945 24.0969L24.5862 24.2635C25.9298 25.0313 25.9298 26.9687 24.5862 27.7365L24.2945 27.9032C23.9923 28.0758 23.6503 28.1667 23.3022 28.1667H4.89942C4.5293 28.1667 4.16644 28.064 3.85122 27.87L3.58039 27.7033C2.31131 26.9224 2.31132 25.0777 3.58039 24.2967L3.85122 24.13Z'
-				fill={segments[6] ? activeColor : inactiveColor}
-			/>
-			{/* 左上竖段 (f) */}
-			<path
-				d='M3.06 23.5458C1.7279 24.3784 -8.31295e-08 23.4207 -1.47217e-07 21.8498L-8.06095e-07 5.69981C-8.77526e-07 3.94893 2.09055 3.04323 3.36788 4.24073L3.70121 4.55323C4.10452 4.93133 4.33333 5.45949 4.33333 6.01231L4.33333 21.6415C4.33333 22.3311 3.97809 22.972 3.39333 23.3375L3.06 23.5458Z'
-				fill={segments[5] ? activeColor : inactiveColor}
-			/>
-			{/* 右上竖段 (b) */}
-			<path
-				d='M24.8497 4.25654C26.1428 3.12502 28.1667 4.04338 28.1667 5.76169L28.1667 21.8498C28.1667 23.4207 26.4388 24.3784 25.1067 23.5458L24.7734 23.3375C24.1886 22.972 23.8334 22.3311 23.8334 21.6415L23.8334 6.05336C23.8334 5.47663 24.0823 4.92798 24.5163 4.54821L24.8497 4.25654Z'
-				fill={segments[1] ? activeColor : inactiveColor}
-			/>
-			{/* 底部横段 (d) */}
-			<path
-				d='M23.9259 48.6321C25.1234 49.9094 24.2177 52 22.4669 52L5.69978 52C3.9489 52 3.04321 49.9094 4.24071 48.6321L4.55321 48.2988C4.9313 47.8955 5.45947 47.6667 6.01228 47.6667L22.1544 47.6667C22.7072 47.6667 23.2353 47.8955 23.6134 48.2988L23.9259 48.6321Z'
-				fill={segments[3] ? activeColor : inactiveColor}
-			/>
-			{/* 右下竖段 (c) */}
-			<path
-				d='M25.1862 28.489C26.5194 27.7391 28.1667 28.7025 28.1667 30.2322L28.1667 46.6299C28.1667 48.4117 26.0124 49.3041 24.7525 48.0441L24.4191 47.7108C24.0441 47.3357 23.8334 46.827 23.8334 46.2966L23.8334 30.4197C23.8334 29.6971 24.2231 29.0308 24.8528 28.6765L25.1862 28.489Z'
-				fill={segments[2] ? activeColor : inactiveColor}
-			/>
-			{/* 左下竖段 (e) */}
-			<path
-				d='M3.4564 47.7859C2.21509 49.1048 4.23823e-07 48.2263 6.6133e-07 46.4152L2.79423e-06 30.1501C3.00022e-06 28.5793 1.72791 27.6216 3.06 28.4541L3.39333 28.6625C3.9781 29.028 4.33334 29.6689 4.33334 30.3585L4.33333 46.061C4.33333 46.5705 4.13891 47.0607 3.78973 47.4317L3.4564 47.7859Z'
-				fill={segments[4] ? activeColor : inactiveColor}
-			/>
-		</svg>
-	)
-}
-
-// 冒号组件（用于分隔时、分、秒）
-function Colon({ className }: { className?: string }) {
-	return (
-		<div className={`flex flex-col justify-center gap-2 ${className}`}>
-			<div className='bg-primary h-1.5 w-1.5' /> {/* 上圆点 */}
-			<div className='bg-primary h-1.5 w-1.5' /> {/* 下圆点 */}
 		</div>
 	)
 }

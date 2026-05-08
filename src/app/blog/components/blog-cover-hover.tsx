@@ -52,8 +52,10 @@ export function useBlogCoverHover(editMode: boolean) {
 
 	// Effect3：监听全局鼠标移动，更新鼠标坐标（用 requestAnimationFrame 优化性能）
 	useEffect(() => {
-		let rafId = 0 // requestAnimationFrame 的 ID，用于取消
-		const latest = { x: 0, y: 0 } // 存储最新的鼠标坐标（避免频繁触发 state 更新）
+		let rafId = 0
+		// requestAnimationFrame 的 ID，用于取消
+		const latest = { x: 0, y: 0 }
+		// 存储最新的鼠标坐标（避免频繁触发 state 更新）
 
 		// 批量更新函数：通过 requestAnimationFrame 延迟执行，减少重渲染
 		const flush = () => {
@@ -98,18 +100,24 @@ export function useBlogCoverHover(editMode: boolean) {
 
 	// 暴露给组件使用的状态和方法
 	return {
-		cancelCoverPreview,    // 取消预览（可用于鼠标“离开”链接时调用）
-		onCoverLinkMouseEnter, // 鼠标进入链接时调用（传入封面 src）
-		hoverCoverPreview,     // 当前预览状态（传给视图组件）
-		mousePosition          // 当前鼠标位置（传给视图组件用于定位）
+		cancelCoverPreview,
+		// 取消预览（可用于鼠标“离开”链接时调用）
+		onCoverLinkMouseEnter,
+		// 鼠标进入链接时调用（传入封面 src）
+		hoverCoverPreview,
+		// 当前预览状态（传给视图组件）
+		mousePosition
+		// 当前鼠标位置（传给视图组件用于定位）
 	}
 }
 
 // ---------------- 视图组件：动画渲染 ----------------
 // 组件 Props 类型定义
 type BlogCoverHoverPreviewProps = {
-	preview: BlogCoverPreviewState       // 预览状态（来自 Hook）
-	position: { x: number; y: number } | null // 鼠标位置（来自 Hook）
+	preview: BlogCoverPreviewState
+	// 预览状态（来自 Hook）
+	position: { x: number; y: number } | null
+	// 鼠标位置（来自 Hook）
 }
 
 export function BlogCoverHoverPreview({ preview, position }: BlogCoverHoverPreviewProps) {

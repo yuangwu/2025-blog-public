@@ -46,15 +46,19 @@ export function useCategories() {
 	// 使用 SWR 进行数据请求，key 为 '/blogs/categories.json'，fetcher 为上面的函数。
 	// 泛型指定 SWR 缓存的数据类型为 CategoriesConfig。
 	const { data, error, isLoading } = useSWR<CategoriesConfig>('/blogs/categories.json', fetcher, {
-		revalidateOnFocus: false,  // 当浏览器窗口重新获得焦点时不重新请求（节省请求次数）。
-		revalidateOnReconnect: true // 当网络重新连接时自动重新验证数据（保证数据及时性）。
+		revalidateOnFocus: false,
+		// 当浏览器窗口重新获得焦点时不重新请求（节省请求次数）。
+		revalidateOnReconnect: true
+		// 当网络重新连接时自动重新验证数据（保证数据及时性）。
 	})
 
 	// 返回规范化后的数据、加载状态和错误信息。
 	return {
 		// 如果 data 存在则使用其中的 categories，否则返回空数组（提供安全的默认值）。
 		categories: data?.categories ?? [],
-		loading: isLoading,   // SWR 的加载状态（首次请求或没有缓存时）。
-		error                  // 如果请求失败，这里会包含错误对象，可用于错误提示。
+		loading: isLoading,
+		// SWR 的加载状态（首次请求或没有缓存时）。
+		error
+		// 如果请求失败，这里会包含错误对象，可用于错误提示。
 	}
 }

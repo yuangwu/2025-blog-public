@@ -43,7 +43,8 @@ const prettyLog = () => {
 
   // 成功级别日志（绿色 #67C23A）
   const success = (textOrTitle: string, content = '') => {
-    const title = isEmpty(content) ? 'Success ' : textOrTitle // 注意这里标题末尾有个空格，保证显示美观
+    const title = isEmpty(content) ? 'Success ' : textOrTitle
+    // 注意这里标题末尾有个空格，保证显示美观
     const text = isEmpty(content) ? textOrTitle : content
     prettyPrint(title, text, '#67C23A')
   }
@@ -51,7 +52,8 @@ const prettyLog = () => {
   // 图片输出函数：在控制台以背景图形式显示一张图片，并可缩放
   const picture = (url: string, scale = 1) => {
     const img = new Image()
-    img.crossOrigin = 'anonymous' // 处理跨域图片，避免 canvas 被污染
+    img.crossOrigin = 'anonymous'
+    // 处理跨域图片，避免 canvas 被污染
     img.onload = () => {
       // 图片加载完成后创建 canvas 并绘制，最终通过 data URI 输出
       const c = document.createElement('canvas')
@@ -70,13 +72,18 @@ const prettyLog = () => {
 
         // 使用 console.log 配合 CSS 将图片设为背景输出
         console.log(
-          `%c sup?`, // 仅用于占位，实际内容不可见
-          `font-size: 1px;  // 文字极小，不影响背景图显示
-           padding: ${Math.floor((img.height * scale) / 2)}px ${Math.floor((img.width * scale) / 2)}px;  // 用 padding 撑开区域，模拟图片尺寸（宽高各一半对称）
+          `%c sup?`,
+          // 仅用于占位，实际内容不可见
+          `font-size: 1px;
+          // 文字极小，不影响背景图显示
+           padding: ${Math.floor((img.height * scale) / 2)}px ${Math.floor((img.width * scale) / 2)}px;
+           // 用 padding 撑开区域，模拟图片尺寸（宽高各一半对称）
            background-image: url(${dataUri});
            background-repeat: no-repeat;
-           background-size: ${img.width * scale}px ${img.height * scale}px;  // 按比例缩放图片
-           color: transparent;  // 文字透明，仅显示背景
+           background-size: ${img.width * scale}px ${img.height * scale}px;
+           // 按比例缩放图片
+           color: transparent;
+           // 文字透明，仅显示背景
           `
         )
       }
@@ -91,7 +98,8 @@ const prettyLog = () => {
     warning,
     success,
     picture,
-    table: console.table // 直接引用原生 console.table，方便输出表格
+    table: console.table
+    // 直接引用原生 console.table，方便输出表格
   }
 }
 

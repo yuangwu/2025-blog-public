@@ -1,6 +1,4 @@
-// 从 zustand 库中导入 create 函数，用于创建全局状态管理 store
 import { create } from 'zustand'
-// 从 zustand 中间件中导入 persist，用于将状态持久化到本地存储（如 localStorage）
 import { persist } from 'zustand/middleware'
 
 // 定义已读文章哈希表类型，键为文章的唯一标识（slug），值为布尔值，表示是否已读

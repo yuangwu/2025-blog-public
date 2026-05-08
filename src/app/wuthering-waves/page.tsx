@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 
+// 单条抽卡记录的类型
 interface CardRecord {
 	cardPoolType: string
 	resourceId: number
@@ -12,12 +13,14 @@ interface CardRecord {
 	time: string
 }
 
+// 保底区间段：从上一个五星开始（或开头）到当前五星（包含）的抽数及相关信息
 type PitySegment = {
-	pulls: number
-	name: string | null
-	time: string | null
+	pulls: number       // 该区间的抽数
+	name: string | null // 该区间结束时的五星名称（若尚未抽到五星则为 null）
+	time: string | null // 抽到五星的时间（同上）
 }
 
+// 解析用户粘贴的原始 JSON 数组，返回 CardRecord 数组
 function parseCardRecords(raw: string): CardRecord[] {
 	const data = JSON.parse(raw) as unknown
 	if (!Array.isArray(data)) {
@@ -44,7 +47,10 @@ function parseCardRecords(raw: string): CardRecord[] {
 	})
 }
 
-/** 按数组顺序累计；遇到 5 星则结束当前段并新开计数。未完成段无 name。 */
+/**
+ * 根据抽卡记录构建保底区间段数组。
+ * 按数组顺序累计；遇到 5 星则结束当前段并新开计数。未完成段无 name。
+ */
 function buildPitySegments(records: CardRecord[]): PitySegment[] {
 	const segments: PitySegment[] = []
 	let pulls = 0
@@ -61,6 +67,7 @@ function buildPitySegments(records: CardRecord[]): PitySegment[] {
 		}
 	}
 
+	// 最后一段（可能未出五星）仍然需要记录
 	if (pulls > 0) {
 		segments.push({ pulls, name: name, time: time })
 	}
@@ -68,11 +75,13 @@ function buildPitySegments(records: CardRecord[]): PitySegment[] {
 	return segments
 }
 
+// 页面主组件
 export default function Page() {
-	const [input, setInput] = useState('')
-	const [error, setError] = useState<string | null>(null)
-	const [segments, setSegments] = useState<PitySegment[]>([])
+	const [input, setInput] = useState('')                // 用户输入的原始 JSON
+	const [error, setError] = useState<string | null>(null) // 解析错误信息
+	const [segments, setSegments] = useState<PitySegment[]>([]) // 分析得到的保底区间
 
+	// 点击分析按钮的回调
 	const analyze = useCallback(() => {
 		setError(null)
 		const trimmed = input.trim()
@@ -114,6 +123,7 @@ export default function Page() {
 				<li>最后粘贴到下方输入框 - 分析。</li>
 			</ul>
 
+			{/* 用户输入区域 */}
 			<textarea
 				value={input}
 				onChange={e => setInput(e.target.value)}
@@ -124,16 +134,19 @@ export default function Page() {
 				placeholder='[{"cardPoolType":"…","qualityLevel":4,"name":"…",...}, ...]'
 			/>
 
+			{/* 分析按钮 */}
 			<button type='button' onClick={analyze} className='bg-brand rounded-md px-4 py-2 text-sm font-medium text-white hover:opacity-90'>
 				分析
 			</button>
 
+			{/* 错误提示 */}
 			{error ? (
 				<p className='text-destructive text-sm' role='alert'>
 					{error}
 				</p>
 			) : null}
 
+			{/* 保底区间列表 */}
 			{segments.length > 0 ? (
 				<ul className='space-y-2'>
 					{segments.map((seg, i) => (

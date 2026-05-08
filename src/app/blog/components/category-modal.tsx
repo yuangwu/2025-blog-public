@@ -16,16 +16,26 @@ import { X } from 'lucide-react'
 
 // 定义组件的 Props 类型接口
 interface CategoryModalProps {
-	open: boolean                          // 控制模态框显示/隐藏
-	onClose: () => void                    // 关闭模态框的回调函数
-	categoryList: string[]                 // 现有分类列表
-	newCategory: string                    // 新增分类的输入值
-	onNewCategoryChange: (value: string) => void  // 新增分类输入变化的回调
-	onAddCategory: () => void              // 点击「新增分类」的回调
-	onRemoveCategory: (category: string) => void  // 删除分类的回调
-	onReorderCategories: (nextList: string[]) => void  // 分类拖拽排序后的回调
-	editableItems: BlogIndexItem[]         // 可分配分类的文章列表
-	onAssignCategory: (slug: string, category?: string) => void  // 为文章分配分类的回调
+	open: boolean
+	// 控制模态框显示/隐藏
+	onClose: () => void
+	// 关闭模态框的回调函数
+	categoryList: string[]
+	// 现有分类列表
+	newCategory: string
+	// 新增分类的输入值
+	onNewCategoryChange: (value: string) => void
+	// 新增分类输入变化的回调
+	onAddCategory: () => void
+	// 点击「新增分类」的回调
+	onRemoveCategory: (category: string) => void
+	// 删除分类的回调
+	onReorderCategories: (nextList: string[]) => void
+	// 分类拖拽排序后的回调
+	editableItems: BlogIndexItem[]
+	// 可分配分类的文章列表
+	onAssignCategory: (slug: string, category?: string) => void
+	// 为文章分配分类的回调
 }
 
 // 导出分类管理模态框组件
@@ -61,8 +71,10 @@ export function CategoryModal({
 	// 处理「拖拽经过」事件（必须 preventDefault 才能触发 drop）
 	const handleDragOver = useCallback((index: number) => {
 		return (event: DragEvent<HTMLSpanElement>) => {
-			event.preventDefault()          // 阻止默认行为（允许放置）
-			event.dataTransfer.dropEffect = 'move'  // 设置拖拽效果为「移动」
+			event.preventDefault()
+			// 阻止默认行为（允许放置）
+			event.dataTransfer.dropEffect = 'move'
+			// 设置拖拽效果为「移动」
 		}
 	}, [])
 
@@ -86,7 +98,8 @@ export function CategoryModal({
 				setDraggingIndex(null)
 			}
 		},
-		[categoryList, draggingIndex, onReorderCategories]  // 依赖项
+		[categoryList, draggingIndex, onReorderCategories]
+		// 依赖项
 	)
 
 	// 处理「拖拽结束」事件（无论是否成功放置，都重置拖拽状态）
@@ -130,11 +143,16 @@ export function CategoryModal({
 						categoryList.map((cat, index) => (
 							<span
 								key={cat}
-								draggable  // 允许拖拽
-								onDragStart={handleDragStart(index)}  // 拖拽开始
-								onDragOver={handleDragOver(index)}    // 拖拽经过
-								onDrop={handleDrop(index)}            // 拖拽放置
-								onDragEnd={handleDragEnd}              // 拖拽结束
+								draggable
+								// 允许拖拽
+								onDragStart={handleDragStart(index)}
+								// 拖拽开始
+								onDragOver={handleDragOver(index)}
+								// 拖拽经过
+								onDrop={handleDrop(index)}
+								// 拖拽放置
+								onDragEnd={handleDragEnd}
+								// 拖拽结束
 								// 动态样式：拖拽中时添加半透明和边框效果
 								className={`bg-brand/10 flex cursor-move items-center gap-2 rounded-full border py-1 pr-1.5 pl-3 ${
 									draggingIndex === index ? 'ring-brand/60 opacity-60 ring-1' : ''

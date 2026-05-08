@@ -1,19 +1,30 @@
 'use client' // 标记为客户端组件，可以使用浏览器 API、事件、状态等
 
 // 导入首页各个卡片组件
-import HiCard from '@/app/(home)/hi-card' // 欢迎卡片
-import ArtCard from '@/app/(home)/art-card' // 文章/艺术卡片
-import ClockCard from '@/app/(home)/clock-card' // 时钟卡片
-import CalendarCard from '@/app/(home)/calendar-card' // 日历卡片
-import SocialButtons from '@/app/(home)/social-buttons' // 社交按钮
-import ShareCard from '@/app/(home)/share-card' // 分享卡片
-import AritcleCard from '@/app/(home)/aritcle-card' // 文章卡片（注意拼写可能与 Article 不同，保持原始导入名）
-import WriteButtons from '@/app/(home)/write-buttons' // 写作按钮
+import HiCard from '@/app/(home)/hi-card'
+// 欢迎卡片
+import ArtCard from '@/app/(home)/art-card'
+// 文章/艺术卡片
+import ClockCard from '@/app/(home)/clock-card'
+// 时钟卡片
+import CalendarCard from '@/app/(home)/calendar-card'
+// 日历卡片
+import SocialButtons from '@/app/(home)/social-buttons'
+// 社交按钮
+import ShareCard from '@/app/(home)/share-card'
+// 分享卡片
+import AritcleCard from '@/app/(home)/aritcle-card'
+// 文章卡片（注意拼写可能与 Article 不同，保持原始导入名）
+import WriteButtons from '@/app/(home)/write-buttons'
+// 写作按钮
 
 // 导入当前目录下的特殊卡片与布局相关组件
-import LikePosition from './like-position' // 点赞位置卡片
-import HatCard from './hat-card' // 帽子卡片（可能是圣诞帽等装饰）
-import BeianCard from './beian-card' // 备案信息卡片
+import LikePosition from './like-position'
+// 点赞位置卡片
+import HatCard from './hat-card'
+// 帽子卡片（可能是圣诞帽等装饰）
+import BeianCard from './beian-card'
+// 备案信息卡片
 
 // 自定义 hook：响应式大小判断（例如判断是否移动端）
 import { useSize } from '@/hooks/use-size'

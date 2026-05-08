@@ -61,9 +61,12 @@ export function useBlogIndex() {
 	}
 
 	return {
-		items: result,   // 处理后的博客列表
-		loading: isLoading, // 加载状态
-		error             // 错误对象（包含状态码等信息）
+		items: result,
+		// 处理后的博客列表
+		loading: isLoading,
+		// 加载状态
+		error
+		// 错误对象（包含状态码等信息）
 	}
 }
 
@@ -85,8 +88,11 @@ export function useLatestBlog() {
 		: null
 
 	return {
-		blog: latestBlog, // 最新博客对象，可能为 null
-		loading,          // 加载状态
-		error             // 错误信息
+		blog: latestBlog,
+		// 最新博客对象，可能为 null
+		loading, 
+		// 加载状态
+		error
+		// 错误信息
 	}
 }

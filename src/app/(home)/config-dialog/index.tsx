@@ -1,31 +1,24 @@
-// 标记为 Next.js 客户端组件（必须在文件顶部）
 'use client'
+// 标记为 Next.js 客户端组件（必须在文件顶部）
 
-// 导入 React 核心 hooks
 import { useState, useRef, useEffect } from 'react'
-// 导入 Framer Motion 动画库组件
 import { motion } from 'motion/react'
-// 导入 Sonner 消息提示库
 import { toast } from 'sonner'
-// 导入自定义对话框模态框组件
 import { DialogModal } from '@/components/dialog-modal'
-// 导入认证状态管理 hook
 import { useAuthStore } from '@/hooks/use-auth'
-// 导入配置状态管理 hook
 import { useConfigStore } from '../stores/config-store'
-// 导入推送网站内容的服务函数
 import { pushSiteContent } from '../services/push-site-content'
-// 导入类型定义（网站内容、卡片样式）
 import type { SiteContent, CardStyles } from '../stores/config-store'
-// 导入子组件：网站设置、色彩配置、首页布局
 import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
 import { ColorConfig } from './color-config'
 import { HomeLayout } from './home-layout'
 
 // 组件 Props 接口定义
 interface ConfigDialogProps {
-	open: boolean // 控制对话框显示/隐藏
-	onClose: () => void // 关闭对话框的回调函数
+	open: boolean
+	// 控制对话框显示/隐藏
+	onClose: () => void
+	// 关闭对话框的回调函数
 }
 
 // 标签页类型定义（网站/色彩/布局）

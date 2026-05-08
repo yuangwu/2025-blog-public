@@ -4,29 +4,40 @@
 
 /** HSVA 颜色模型（色相、饱和度、明度、透明度） */
 export interface HSVA {
-	h: number // 色相，范围 0–360
-	s: number // 饱和度，范围 0–1
-	v: number // 明度，范围 0–1
-	a: number // 透明度，范围 0–1
+	h: number
+	// 色相，范围 0–360
+	s: number
+	// 饱和度，范围 0–1
+	v: number
+	// 明度，范围 0–1
+	a: number
+	// 透明度，范围 0–1
 }
 
 /** HSL 颜色模型（色相、饱和度、亮度） */
 export interface HSL {
-	h: number // 色相，范围 0–360
-	s: number // 饱和度，范围 0–1
-	l: number // 亮度，范围 0–1
+	h: number
+	// 色相，范围 0–360
+	s: number
+	// 饱和度，范围 0–1
+	l: number
+	// 亮度，范围 0–1
 }
 
 /** RGB 颜色模型（红、绿、蓝） */
 export interface RGB {
-	r: number // 红色通道，范围 0–255
-	g: number // 绿色通道，范围 0–255
-	b: number // 蓝色通道，范围 0–255
+	r: number
+	// 红色通道，范围 0–255
+	g: number
+	// 绿色通道，范围 0–255
+	b: number
+	// 蓝色通道，范围 0–255
 }
 
 /** RGBA 颜色模型，在 RGB 之外增加了透明度通道 */
 export interface RGBA extends RGB {
-	a: number // 透明度，范围 0–1
+	a: number
+	// 透明度，范围 0–1
 }
 
 // ---------- Hex 与 RGB 的转换 ----------
@@ -43,11 +54,15 @@ export function hexToRgb(hex: string): RGB {
 	const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(cleaned)
 	return result
 		? {
-				r: parseInt(result[1], 16), // 红色分量（16进制转10进制）
-				g: parseInt(result[2], 16), // 绿色分量
-				b: parseInt(result[3], 16)  // 蓝色分量
+				r: parseInt(result[1], 16),
+			// 红色分量（16进制转10进制）
+				g: parseInt(result[2], 16),
+			// 绿色分量
+				b: parseInt(result[3], 16)
+			// 蓝色分量
 			}
-		: { r: 0, g: 0, b: 0 } // 格式不符时，安全降级为黑色
+		: { r: 0, g: 0, b: 0 }
+	// 格式不符时，安全降级为黑色
 }
 
 /**
@@ -90,9 +105,12 @@ export function hexToRgba(hex: string): RGBA {
 export function rgbToHex(r: number, g: number, b: number): string {
 	return '#' + [r, g, b]
 		.map(x =>
-			Math.round(x)                // 取整，避免小数
-				.toString(16)             // 转为十六进制
-				.padStart(2, '0')         // 不足两位时前面补0
+			Math.round(x) 
+			// 取整，避免小数
+				.toString(16)
+			// 转为十六进制
+				.padStart(2, '0')
+			 // 不足两位时前面补0
 		)
 		.join('')
 }

@@ -1,21 +1,29 @@
 // 该指令告诉 Next.js 这个文件是一个客户端组件，所有代码都将在浏览器中执行
 'use client'
 
-import { useEffect } from 'react' // React 的副作用钩子，用于在组件挂载/卸载时执行逻辑
-import { create } from 'zustand'   // zustand 状态管理库，用于创建轻量级的全局 store
+import { useEffect } from 'react'
+import { create } from 'zustand'
 
 /**
  * 定义中心位置状态的类型
  */
 type CenterState = {
-  x: number        // 当前显示用的水平中心坐标（可能带有偏移）
-  y: number        // 当前显示用的垂直中心坐标（已减去 24px 偏移）
-  centerX: number  // 视口的几何水平中心
-  centerY: number  // 视口的几何垂直中心
-  width: number    // 视口宽度
-  height: number   // 视口高度
-  setCenter: (x: number, y: number) => void // 手动设置显示用的中心坐标
-  recalc: () => void                        // 重新根据窗口尺寸计算所有中心相关数据
+  x: number
+  // 当前显示用的水平中心坐标（可能带有偏移）
+  y: number
+  // 当前显示用的垂直中心坐标（已减去 24px 偏移）
+  centerX: number
+  // 视口的几何水平中心
+  centerY: number
+  // 视口的几何垂直中心
+  width: number
+  // 视口宽度
+  height: number
+  // 视口高度
+  setCenter: (x: number, y: number) => void
+  // 手动设置显示用的中心坐标
+  recalc: () => void
+  // 重新根据窗口尺寸计算所有中心相关数据
 }
 
 /**
@@ -32,10 +40,14 @@ const computeCenter = () => {
   const width = window.innerWidth
   const height = window.innerHeight
   return {
-    x: Math.floor(width / 2),          // 实际使用的中心 x（页面中间）
-    y: Math.floor(height / 2) - 24,    // 实际使用的中心 y，减去 24px 偏移，给顶部 UI 留出空间
-    centerX: Math.floor(width / 2),    // 纯粹的几何水平中心
-    centerY: Math.floor(height / 2),   // 纯粹的几何垂直中心
+    x: Math.floor(width / 2),
+    // 实际使用的中心 x（页面中间）
+    y: Math.floor(height / 2) - 24,
+    // 实际使用的中心 y，减去 24px 偏移，给顶部 UI 留出空间
+    centerX: Math.floor(width / 2),
+    // 纯粹的几何水平中心
+    centerY: Math.floor(height / 2),
+    // 纯粹的几何垂直中心
     width,
     height
   }
@@ -85,5 +97,6 @@ export function useCenterInit() {
 
     // 清理副作用：组件卸载时移除 resize 监听
     return () => window.removeEventListener('resize', update)
-  }, []) // 空依赖表示只在组件挂载/卸载时执行
+  }, [])
+  // 空依赖表示只在组件挂载/卸载时执行
 }

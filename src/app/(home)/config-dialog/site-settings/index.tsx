@@ -1,7 +1,10 @@
 'use client'
 
+// 从配置 store 中导入 SiteContent 类型，用于表示网站的全部配置数据
 import type { SiteContent } from '../../stores/config-store'
+// 导入各图片上传模块和文件项的类型定义
 import type { ArtImageUploads, BackgroundImageUploads, FileItem, SocialButtonImageUploads } from './types'
+// 导入各个子设置组件
 import { FaviconAvatarUpload } from './favicon-avatar-upload'
 import { SiteMetaForm } from './site-meta-form'
 import { ArtImagesSection } from './art-images-section'
@@ -10,8 +13,10 @@ import { SocialButtonsSection } from './social-buttons-section'
 import { HatSection } from './hat-section'
 import { BeianForm } from './beian-form'
 
+// 重新导出类型，方便外部使用
 export type { FileItem, ArtImageUploads, BackgroundImageUploads, SocialButtonImageUploads } from './types'
 
+// SiteSettings 组件的 Props 类型定义，包含所有需要传递的状态和更新函数
 interface SiteSettingsProps {
 	formData: SiteContent
 	setFormData: React.Dispatch<React.SetStateAction<SiteContent>>
@@ -27,6 +32,7 @@ interface SiteSettingsProps {
 	setSocialButtonImageUploads: React.Dispatch<React.SetStateAction<SocialButtonImageUploads>>
 }
 
+// 网站设置主组件，负责组合各个子设置区域
 export function SiteSettings({
 	formData,
 	setFormData,
@@ -43,12 +49,16 @@ export function SiteSettings({
 }: SiteSettingsProps) {
 	return (
 		<div className='space-y-6'>
+			{/* 网站图标和头像上传 */}
 			<FaviconAvatarUpload faviconItem={faviconItem} setFaviconItem={setFaviconItem} avatarItem={avatarItem} setAvatarItem={setAvatarItem} />
 
+			{/* 网站元信息表单（标题、描述等） */}
 			<SiteMetaForm formData={formData} setFormData={setFormData} />
 
+			{/* 备案号设置表单 */}
 			<BeianForm formData={formData} setFormData={setFormData} />
 
+			{/* 社交按钮设置区域，包含图片上传功能 */}
 			<SocialButtonsSection
 				formData={formData}
 				setFormData={setFormData}
@@ -56,8 +66,10 @@ export function SiteSettings({
 				setSocialButtonImageUploads={setSocialButtonImageUploads}
 			/>
 
+			{/* 艺术作品图片管理 */}
 			<ArtImagesSection formData={formData} setFormData={setFormData} artImageUploads={artImageUploads} setArtImageUploads={setArtImageUploads} />
 
+			{/* 背景图片管理 */}
 			<BackgroundImagesSection
 				formData={formData}
 				setFormData={setFormData}
@@ -65,6 +77,7 @@ export function SiteSettings({
 				setBackgroundImageUploads={setBackgroundImageUploads}
 			/>
 
+			{/* 其他开关选项：时钟秒数、摘要放入内容、隐藏编辑按钮 */}
 			<div className='flex gap-3'>
 				<label className='flex items-center gap-2'>
 					<input
@@ -96,6 +109,8 @@ export function SiteSettings({
 					<span className='text-sm font-medium'>隐藏编辑按钮（编辑快捷键 ctrl/cmd + ,）</span>
 				</label>
 			</div>
+
+			{/* 高级开关选项：缓存 PEM、启用分类、开启圣诞节效果 */}
 			<div className='flex gap-3'>
 				<label className='flex items-center gap-2'>
 					<input
@@ -126,6 +141,7 @@ export function SiteSettings({
 				</label>
 			</div>
 
+			{/* 顶帽（Hat）效果设置 */}
 			<HatSection formData={formData} setFormData={setFormData} />
 		</div>
 	)

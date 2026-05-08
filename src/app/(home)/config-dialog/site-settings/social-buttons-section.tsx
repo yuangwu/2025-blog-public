@@ -34,18 +34,26 @@ type SocialButtonType =
 
 // 定义单个社交按钮的配置数据结构
 interface SocialButtonConfig {
-	id: string           // 按钮唯一标识符
-	type: SocialButtonType // 按钮类型（平台）
-	value: string        // 按钮值（链接、邮箱、图片路径等）
-	label?: string       // 可选的显示标签文本
-	order: number        // 显示顺序
+	id: string
+	// 按钮唯一标识符
+	type: SocialButtonType
+	// 按钮类型（平台）
+	value: string
+	// 按钮值（链接、邮箱、图片路径等）
+	label?: string
+	// 可选的显示标签文本
+	order: number
+	// 显示顺序
 }
 
 // 定义组件的 Props 类型
 interface SocialButtonsSectionProps {
-	formData: SiteContent                          // 表单数据（包含社交按钮配置）
-	setFormData: React.Dispatch<React.SetStateAction<SiteContent>> // 更新表单数据的函数
-	socialButtonImageUploads: SocialButtonImageUploads            // 图片上传状态管理
+	formData: SiteContent
+	// 表单数据（包含社交按钮配置）
+	setFormData: React.Dispatch<React.SetStateAction<SiteContent>>
+	// 更新表单数据的函数
+	socialButtonImageUploads: SocialButtonImageUploads
+	// 图片上传状态管理
 	setSocialButtonImageUploads: React.Dispatch<React.SetStateAction<SocialButtonImageUploads>> // 更新图片上传状态的函数
 }
 

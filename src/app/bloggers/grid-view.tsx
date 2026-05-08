@@ -14,20 +14,30 @@ export type BloggerStatus = 'recent' | 'disconnected'
 
 // 定义博主数据结构接口
 export interface Blogger {
-	name: string           // 博主名称
-	avatar: string         // 博主头像 URL
-	url: string            // 博主链接（唯一标识，用于 key）
-	description: string    // 博主简介
-	stars: number          // 博主评分/星级
-	status?: BloggerStatus // 博主状态（可选，默认为 'recent'）
+	name: string
+	// 博主名称
+	avatar: string
+	// 博主头像 URL
+	url: string 
+	// 博主链接（唯一标识，用于 key）
+	description: string
+	// 博主简介
+	stars: number
+	// 博主评分/星级
+	status?: BloggerStatus
+	// 博主状态（可选，默认为 'recent'）
 }
 
 // 定义 GridView 组件的 Props 接口
 interface GridViewProps {
-	bloggers: Blogger[]                          // 博主数据数组
-	isEditMode?: boolean                         // 是否为编辑模式（可选，默认 false）
-	onUpdate?: (blogger: Blogger, oldBlogger: Blogger, avatarItem?: AvatarItem) => void // 更新博主的回调函数（可选）
-	onDelete?: (blogger: Blogger) => void       // 删除博主的回调函数（可选）
+	bloggers: Blogger[]
+	// 博主数据数组
+	isEditMode?: boolean
+	// 是否为编辑模式（可选，默认 false）
+	onUpdate?: (blogger: Blogger, oldBlogger: Blogger, avatarItem?: AvatarItem) => void
+	// 更新博主的回调函数（可选）
+	onDelete?: (blogger: Blogger) => void
+	// 删除博主的回调函数（可选）
 }
 
 // 定义并导出默认组件 GridView（博主网格视图）
@@ -60,8 +70,10 @@ export default function GridView({ bloggers, isEditMode = false, onUpdate, onDel
 				<input
 					type='text'
 					placeholder='搜索博主...'
-					value={searchTerm}                          // 绑定搜索词状态
-					onChange={e => setSearchTerm(e.target.value)} // 输入变化时更新搜索词
+					value={searchTerm}
+					// 绑定搜索词状态
+					onChange={e => setSearchTerm(e.target.value)}
+					// 输入变化时更新搜索词
 					className='focus:ring-brand mx-auto block w-full max-w-md rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:outline-none'
 				/>
 
@@ -69,7 +81,8 @@ export default function GridView({ bloggers, isEditMode = false, onUpdate, onDel
 				<div className='flex flex-wrap justify-center gap-2'>
 					{/* "近期更新" 按钮 */}
 					<button
-						onClick={() => setSelectedCategory('recent')} // 点击时切换分类为 'recent'
+						onClick={() => setSelectedCategory('recent')}
+						// 点击时切换分类为 'recent'
 						// 动态样式：选中时用品牌色背景+白字，未选中时灰色背景+深灰字，悬停加深灰色
 						className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
 							selectedCategory === 'recent' ? 'bg-brand text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -78,7 +91,8 @@ export default function GridView({ bloggers, isEditMode = false, onUpdate, onDel
 					</button>
 					{/* "长期失联" 按钮 */}
 					<button
-						onClick={() => setSelectedCategory('disconnected')} // 点击时切换分类为 'disconnected'
+						onClick={() => setSelectedCategory('disconnected')}
+						// 点击时切换分类为 'disconnected'
 						// 动态样式同上
 						className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
 							selectedCategory === 'disconnected' ? 'bg-brand text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -93,11 +107,16 @@ export default function GridView({ bloggers, isEditMode = false, onUpdate, onDel
 				{/* 遍历过滤后的博主数组，渲染 BloggerCard */}
 				{filteredBloggers.map(blogger => (
 					<BloggerCard 
-						key={blogger.url}              // 使用博主链接作为唯一 key
-						blogger={blogger}              // 传递博主数据
-						isEditMode={isEditMode}        // 传递编辑模式状态
-						onUpdate={onUpdate}            // 传递更新回调
-						onDelete={() => onDelete?.(blogger)} // 传递删除回调（安全调用，避免 onDelete 为空时报错）
+						key={blogger.url}
+						// 使用博主链接作为唯一 key
+						blogger={blogger}
+						// 传递博主数据
+						isEditMode={isEditMode}
+						// 传递编辑模式状态
+						onUpdate={onUpdate}
+						// 传递更新回调
+						onDelete={() => onDelete?.(blogger)}
+						// 传递删除回调（安全调用，避免 onDelete 为空时报错）
 					/>
 				))}
 			</div>

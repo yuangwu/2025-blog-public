@@ -5,8 +5,10 @@ import { toast } from 'sonner'
 import { decrypt, encrypt } from './aes256-util'
 
 // 存储在 sessionStorage 中的键名
-const GITHUB_TOKEN_CACHE_KEY = 'github_token'   // 安装令牌的缓存键
-const GITHUB_PEM_CACHE_KEY = 'p_info'           // 加密后私钥的缓存键
+const GITHUB_TOKEN_CACHE_KEY = 'github_token'
+// 安装令牌的缓存键
+const GITHUB_PEM_CACHE_KEY = 'p_info'
+// 加密后私钥的缓存键
 
 /**
  * 从 sessionStorage 中获取缓存的 GitHub 安装令牌

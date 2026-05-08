@@ -6,10 +6,14 @@ export type { BlogConfig } from '@/app/blog/types'
 
 // 定义加载后博客的数据结构
 export type LoadedBlog = {
-	slug: string          // 博客的唯一标识（slug）
-	config: BlogConfig    // 博客的配置对象（从 config.json 解析而来）
-	markdown: string      // 博客的 Markdown 正文内容
-	cover?: string        // 可选封面图，通常来自 config.cover
+	slug: string
+	// 博客的唯一标识（slug）
+	config: BlogConfig
+	// 博客的配置对象（从 config.json 解析而来）
+	markdown: string
+	// 博客的 Markdown 正文内容
+	cover?: string
+	// 可选封面图，通常来自 config.cover
 }
 
 /**

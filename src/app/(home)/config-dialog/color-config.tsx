@@ -1,21 +1,18 @@
-// 标记该组件为客户端组件（用于 Next.js App Router）
 'use client'
+// 标记该组件为客户端组件（用于 Next.js App Router）
 
-// 导入 framer-motion 动画库
 import { motion } from 'motion/react'
-// 导入自定义颜色选择器组件
 import { ColorPicker } from '@/components/color-picker'
-// 导入 Lucide 图标库中的关闭图标
 import { XIcon } from 'lucide-react'
-// 导入站点内容类型定义
 import type { SiteContent } from '../stores/config-store'
-// 导入默认站点内容配置文件（JSON）
 import siteContent from '@/config/site-content.json'
 
 // 定义 ColorConfig 组件的 Props 类型
 interface ColorConfigProps {
-	formData: SiteContent               // 当前表单数据（站点内容）
-	setFormData: React.Dispatch<React.SetStateAction<SiteContent>> // 更新表单数据的函数
+	formData: SiteContent
+	// 当前表单数据（站点内容）
+	setFormData: React.Dispatch<React.SetStateAction<SiteContent>>
+	// 更新表单数据的函数
 }
 
 // 从配置文件中获取默认主题颜色作为备用值
@@ -23,9 +20,12 @@ const DEFAULT_THEME_COLORS = siteContent.theme
 
 // 定义颜色预设的类型
 type ColorPreset = {
-	name: string                          // 预设名称
-	theme: Partial<SiteContent['theme']>  // 预设的主题颜色（部分字段可选）
-	backgroundColors: string[]           // 预设的背景色数组
+	name: string
+	// 预设名称
+	theme: Partial<SiteContent['theme']>
+	// 预设的主题颜色（部分字段可选）
+	backgroundColors: string[]
+	// 预设的背景色数组
 }
 
 // 定义几套预设配色方案
@@ -91,8 +91,10 @@ export function ColorConfig({ formData, setFormData }: ColorConfigProps) {
 		setFormData(prev => ({
 			...prev,
 			theme: {
-				...prev.theme,   // 保留其他主题字段
-				[key]: value     // 更新当前字段
+				...prev.theme,
+				// 保留其他主题字段
+				[key]: value
+				// 更新当前字段
 			}
 		}))
 	}
@@ -110,23 +112,28 @@ export function ColorConfig({ formData, setFormData }: ColorConfigProps) {
 
 	// 处理背景色数组中某个索引的颜色变更
 	const handleColorChange = (index: number, value: string) => {
-		const newColors = [...formData.backgroundColors] // 浅拷贝背景色数组
-		newColors[index] = value                         // 更新指定位置颜色
+		const newColors = [...formData.backgroundColors]
+		// 浅拷贝背景色数组
+		newColors[index] = value
+		// 更新指定位置颜色
 		setFormData({ ...formData, backgroundColors: newColors })
 	}
 
 	// 生成一个随机十六进制颜色（例如 #A1B2C3）
 	const generateRandomColor = () => {
-		const randomChannel = () => Math.floor(Math.random() * 256)    // 随机 0-255
+		const randomChannel = () => Math.floor(Math.random() * 256
+											  )    // 随机 0-255
 		return `#${[randomChannel(), randomChannel(), randomChannel()]
-			.map(channel => channel.toString(16).padStart(2, '0'))   // 转为两位十六进制
+			.map(channel => channel.toString(16).padStart(2, '0'))
+				   // 转为两位十六进制
 			.join('')
 			.toUpperCase()}`
 	}
 
 	// 随机生成整套配色（背景色和品牌色）
 	const handleRandomizeColors = () => {
-		const count = Math.floor(Math.random() * 5) + 4 // 随机 4~8 个背景色
+		const count = Math.floor(Math.random() * 5) + 4
+		// 随机 4~8 个背景色
 		const backgroundColors = Array.from({ length: count }, () => generateRandomColor())
 		const colorBrand = generateRandomColor()
 
@@ -160,10 +167,13 @@ export function ColorConfig({ formData, setFormData }: ColorConfigProps) {
 	const handlePresetChange = (preset: ColorPreset) => {
 		setFormData(prev => ({
 			...prev,
-			backgroundColors: [...preset.backgroundColors], // 深拷贝背景色数组
+			backgroundColors: [...preset.backgroundColors],
+			// 深拷贝背景色数组
 			theme: {
-				...prev.theme,           // 保留原有主题配置
-				...preset.theme          // 用预设覆盖部分主题字段
+				...prev.theme,
+				// 保留原有主题配置
+				...preset.theme
+				// 用预设覆盖部分主题字段
 			}
 		}))
 	}

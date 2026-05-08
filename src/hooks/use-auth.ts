@@ -9,11 +9,16 @@ import { create } from 'zustand'
 
 // 导入认证相关的工具函数
 import {
-  clearAllAuthCache,      // 清除所有认证缓存
-  getAuthToken as getToken, // 获取认证 Token（可能会自动刷新）
-  hasAuth as checkAuth,    // 检查当前是否存在有效的认证状态
-  getPemFromCache,        // 从本地缓存读取 PEM 私钥
-  savePemToCache          // 将 PEM 私钥保存到本地缓存
+  clearAllAuthCache,
+  // 清除所有认证缓存
+  getAuthToken as getToken,
+  // 获取认证 Token（可能会自动刷新）
+  hasAuth as checkAuth,
+  // 检查当前是否存在有效的认证状态
+  getPemFromCache,
+  // 从本地缓存读取 PEM 私钥
+  savePemToCache
+  // 将 PEM 私钥保存到本地缓存
 } from '@/lib/auth'
 
 // 引入全局配置 Store，用于获取站点配置（如是否缓存 PEM）
@@ -25,14 +30,20 @@ import { useConfigStore } from '@/app/(home)/stores/config-store'
  */
 interface AuthStore {
   // ---- 状态 ----
-  isAuth: boolean          // 当前是否处于已认证状态
-  privateKey: string | null // 当前持有的私钥内容（PEM 格式字符串）
+  isAuth: boolean
+  // 当前是否处于已认证状态
+  privateKey: string | null
+  // 当前持有的私钥内容（PEM 格式字符串）
 
   // ---- 动作 ----
-  setPrivateKey: (key: string) => void  // 设置私钥同时标记已认证，并按配置决定是否缓存
-  clearAuth: () => void                 // 清除认证状态与所有相关缓存
-  refreshAuthState: () => void          // 异步刷新认证状态（从底层检查）
-  getAuthToken: () => Promise<string>   // 获取认证 Token，同时刷新认证状态
+  setPrivateKey: (key: string) => void
+  // 设置私钥同时标记已认证，并按配置决定是否缓存
+  clearAuth: () => void
+  // 清除认证状态与所有相关缓存
+  refreshAuthState: () => void
+  // 异步刷新认证状态（从底层检查）
+  getAuthToken: () => Promise<string>
+  // 获取认证 Token，同时刷新认证状态
 }
 
 /**
@@ -56,7 +67,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     // 读取当前站点配置，判断是否需要缓存 PEM
     const { siteContent } = useConfigStore.getState()
     if (siteContent?.isCachePem) {
-      await savePemToCache(key) // 保存到缓存
+      await savePemToCache(key)
+      // 保存到缓存
     }
   },
 
@@ -66,8 +78,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    * 注意：此处并未清空 privateKey，可根据需要扩展
    */
   clearAuth: () => {
-    clearAllAuthCache()          // 清理所有认证相关的本地缓存
-    set({ isAuth: false })      // 更新状态为未认证
+    clearAllAuthCache()
+    // 清理所有认证相关的本地缓存
+    set({ isAuth: false })
+    // 更新状态为未认证
   },
 
   /**
@@ -86,7 +100,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
    */
   getAuthToken: async () => {
     const token = await getToken()
-    get().refreshAuthState() // 刷新 isAuth 状态，确保与 Token 一致
+    get().refreshAuthState()
+    // 刷新 isAuth 状态，确保与 Token 一致
     return token
   }
 }))

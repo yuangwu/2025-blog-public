@@ -1,5 +1,5 @@
-// 标记此组件为客户端组件，因为使用了 React hooks 和浏览器 API（如 window.confirm）
 'use client'
+// 标记此组件为客户端组件，因为使用了 React hooks 和浏览器 API（如 window.confirm）
 
 import { motion } from 'motion/react' // 引入 motion 库用于动画
 import { useRef, useState } from 'react'

@@ -1,21 +1,32 @@
+# 指定 Worker 的入口文件，这里使用 OpenNext 构建的 Worker 脚本
 main = ".open-next/worker.js"
+
+# Worker 的名称，部署后在 Cloudflare 仪表板中显示
 name = "2025-blog-public"
+
+# 兼容性日期：使用该日期及之后的 Workers 运行时行为与 API
 compatibility_date = "2025-03-25"
+
+# 启用 Node.js 兼容性，可在 Worker 中使用部分 Node.js API（如 Buffer、require 等）
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
+# 静态资源目录，其内容将作为 Cloudflare Pages 风格的静态资产部署
 directory = ".open-next/assets"
+# 在 Worker 代码中通过 env.ASSETS 访问这些静态资源
 binding = "ASSETS"
 
 [build]
+# 部署前执行的构建命令，此处使用 pnpm 运行自定义脚本
 command = "pnpm run build:cf"
 
 [observability]
 [observability.logs]
+# 是否启用可观测性日志
 enabled = true
 # 头部采样率，1 表示 100% 采样（所有请求都会被采样）
 head_sampling_rate = 1
-# 启用调用日志（记录每次函数调用）
+# 是否启用调用日志（记录每次函数调用）
 invocation_logs = true
-# 持久化日志到磁盘（本地开发时有用）
+# 是否将日志持久化到磁盘（本地开发时有用）
 persist = true

@@ -1,22 +1,29 @@
-'use client' // 声明该文件是一个客户端组件，在 Next.js App Router 中使用
+'use client'
+// 声明该文件是一个客户端组件，在 Next.js App Router 中使用
 
 import { useEffect, useState } from 'react'
 import Card from '@/components/card'
 import { useCenterStore } from '@/hooks/use-center'
 import { useConfigStore } from './stores/config-store'
 import { CARD_SPACING } from '@/consts'
-import shareList from '@/app/share/list.json' // 导入分享列表的 JSON 数据
+import shareList from '@/app/share/list.json'
 import Link from 'next/link'
 import { HomeDraggableLayer } from './home-draggable-layer'
 
 // 定义分享项的数据结构
 type ShareItem = {
-	name: string          // 名称
-	url: string           // 链接地址
-	logo: string          // 图标路径
-	description: string   // 描述
-	tags: string[]        // 标签数组
-	stars: number         // 星标数
+	name: string
+	// 名称
+	url: string
+	// 链接地址
+	logo: string
+	// 图标路径
+	description: string
+	// 描述
+	tags: string[]
+	// 标签数组
+	stars: number
+	// 星标数
 }
 
 export default function ShareCard() {
@@ -35,7 +42,8 @@ export default function ShareCard() {
 	useEffect(() => {
 		const randomIndex = Math.floor(Math.random() * shareList.length)
 		setRandomItem(shareList[randomIndex])
-	}, []) // 空依赖数组表示仅在组件首次渲染后执行一次
+	}, []) 
+	// 空依赖数组表示仅在组件首次渲染后执行一次
 
 	// 随机数据未加载完成时不渲染任何内容
 	if (!randomItem) {

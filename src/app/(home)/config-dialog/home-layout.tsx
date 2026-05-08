@@ -1,10 +1,14 @@
 'use client'
 
-import { motion } from 'motion/react'
+// 引入 React 核心库（Vercel/Next.js 环境必须显式导入以支持 JSX 和类型）
+import React from 'react'
+// 导入全局状态管理所需的 store 和类型
 import { useConfigStore, type CardStyles } from '../stores/config-store'
 import { useLayoutEditStore } from '../stores/layout-edit-store'
+// 导入卡片样式默认配置（请确保该 JSON 文件存在于 @/config/card-styles-default.json 路径）
 import cardStylesDefault from '@/config/card-styles-default.json'
 
+// 卡片显示名称映射表（用于表格中展示中文名称）
 const CARD_LABELS: Record<string, string> = {
 	artCard: '首图',
 	hiCard: '中心',
@@ -21,29 +25,40 @@ const CARD_LABELS: Record<string, string> = {
 	beianCard: '备案'
 }
 
+// 组件属性类型定义
 interface HomeLayoutProps {
-	cardStylesData: CardStyles
-	setCardStylesData: React.Dispatch<React.SetStateAction<CardStyles>>
-	onClose?: () => void
+	cardStylesData: CardStyles               // 当前卡片样式数据
+	setCardStylesData: React.Dispatch<React.SetStateAction<CardStyles>> // 更新卡片样式的函数
+	onClose?: () => void                     // 可选：关闭当前面板的回调
 }
 
+/**
+ * 主页布局编辑器组件
+ * 允许用户以表格形式调整每个卡片的宽高、顺序、偏移量及启用状态
+ * 进入拖拽布局模式后，会将修改后的样式同步到全局 store
+ */
 export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeLayoutProps) {
+	// 获取全局样式更新方法
 	const { setCardStyles } = useConfigStore()
+	// 获取布局编辑模式的状态及启动方法
 	const startEditing = useLayoutEditStore(state => state.startEditing)
 	const editing = useLayoutEditStore(state => state.editing)
 
+	/** 进入手动拖拽布局：保存当前样式到全局并启动编辑模式 */
 	const handleStartManualLayout = () => {
 		setCardStyles(cardStylesData)
 		startEditing()
 		onClose?.()
 	}
 
+	/** 重置为默认样式（从 JSON 文件读取） */
 	const handleReset = () => {
 		setCardStylesData(cardStylesDefault as CardStyles)
 	}
 
 	return (
 		<div className='overflow-x-auto'>
+			{/* 头部：提示信息 + 操作按钮 */}
 			<div className='flex items-center justify-between'>
 				<div className='text-secondary text-sm'>（偏移代表相对中心的偏移）</div>
 				<div className='flex shrink-0 items-center gap-2 whitespace-nowrap'>
@@ -59,6 +74,8 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 					</button>
 				</div>
 			</div>
+
+			{/* 卡片配置表格 */}
 			<table className='mt-3 w-full border-collapse text-sm whitespace-nowrap'>
 				<thead>
 					<tr className='border-b text-xs text-gray-500'>
@@ -69,13 +86,16 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 						<th className='px-3 py-2 text-left font-medium'>横向偏移</th>
 						<th className='px-3 py-2 text-left font-medium'>纵向偏移</th>
 						<th className='px-3 py-2 text-left font-medium'>启用</th>
-					</tr>
+					</td>
 				</thead>
 				<tbody>
+					{/* 遍历所有卡片配置 */}
 					{Object.entries(cardStylesData).map(([key, cardStyle]: [string, any]) => (
 						<tr key={key} className='border-b last:border-0'>
+							{/* 卡片名称（优先使用映射表，否则将驼峰转为空格分隔） */}
 							<td className='px-3 py-2 align-middle whitespace-nowrap'>{CARD_LABELS[key] ?? key.replace(/([A-Z])/g, ' $1').trim()}</td>
 
+							{/* 宽度输入框（仅当卡片支持宽度时显示） */}
 							<td className='px-3 py-2'>
 								{cardStyle.width !== undefined ? (
 									<input
@@ -96,6 +116,8 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 									<span className='text-xs text-gray-400'>-</span>
 								)}
 							</td>
+
+							{/* 高度输入框 */}
 							<td className='px-3 py-2'>
 								{cardStyle.height !== undefined ? (
 									<input
@@ -115,7 +137,9 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 								) : (
 									<span className='text-xs text-gray-400'>-</span>
 								)}
-							</td>
+								</td>
+
+							{/* 显示顺序 */}
 							<td className='px-3 py-2'>
 								<input
 									type='number'
@@ -131,7 +155,9 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 									}
 									className='bg-secondary/10 w-full rounded-lg border px-3 py-1.5 text-xs'
 								/>
-							</td>
+								</td>
+
+							{/* 横向偏移（允许为空，即 null） */}
 							<td className='px-3 py-2'>
 								<input
 									type='number'
@@ -149,7 +175,9 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 									}}
 									className='no-spinner bg-secondary/10 w-full rounded-lg border px-3 py-1.5 text-xs'
 								/>
-							</td>
+								</td>
+
+							{/* 纵向偏移 */}
 							<td className='px-3 py-2'>
 								<input
 									type='number'
@@ -167,7 +195,9 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 									}}
 									className='no-spinner bg-secondary/10 w-full rounded-lg border px-3 py-1.5 text-xs'
 								/>
-							</td>
+								</td>
+
+							{/* 是否启用该卡片 */}
 							<td className='px-3 py-2'>
 								<input
 									type='checkbox'
@@ -183,8 +213,8 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 									}
 									className='accent-brand h-4 w-4 rounded border-gray-300'
 								/>
-							</td>
-						</tr>
+								</td>
+							</tr>
 					))}
 				</tbody>
 			</table>

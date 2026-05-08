@@ -86,7 +86,7 @@ export function HomeLayout({ cardStylesData, setCardStylesData, onClose }: HomeL
 						<th className='px-3 py-2 text-left font-medium'>横向偏移</th>
 						<th className='px-3 py-2 text-left font-medium'>纵向偏移</th>
 						<th className='px-3 py-2 text-left font-medium'>启用</th>
-					</td>
+					</tr>
 				</thead>
 				<tbody>
 					{/* 遍历所有卡片配置 */}

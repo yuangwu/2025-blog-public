@@ -4,14 +4,20 @@
  */
 export type FileItem = 
   | {
-      type: 'file';       // 类型标识：本地文件
-      file: File;         // 原始文件对象（来自<input type="file">等）
-      previewUrl: string; // 本地预览URL（用于前端展示）
-      hash?: string;      // 可选：文件哈希值（用于去重、校验等）
+      type: 'file';
+    // 类型标识：本地文件
+      file: File;
+    // 原始文件对象（来自<input type="file">等）
+      previewUrl: string;
+    // 本地预览URL（用于前端展示）
+      hash?: string;
+    // 可选：文件哈希值（用于去重、校验等）
     }
   | {
-      type: 'url';        // 类型标识：网络URL
-      url: string;        // 网络资源地址
+      type: 'url';
+    // 类型标识：网络URL
+      url: string;
+    // 网络资源地址
     };
 
 /**

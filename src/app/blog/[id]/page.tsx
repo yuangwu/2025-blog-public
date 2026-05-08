@@ -45,18 +45,23 @@ export default function Page() {
 
 		// 异步加载博客数据的核心函数
 		async function run() {
-			if (!slug) return // 如果没有 slug，直接返回
+			if (!slug) return
+			// 如果没有 slug，直接返回
 
 			try {
-				setLoading(true) // 开始加载
+				setLoading(true)
+				// 开始加载
 				// 调用工具函数加载博客数据
 				const blogData = await loadBlog(slug)
 
 				// 如果组件未卸载，更新状态
 				if (!cancelled) {
-					setBlog(blogData) // 设置博客数据
-					setError(null) // 清除错误
-					markAsRead(slug) // 标记文章为已读
+					setBlog(blogData)
+					// 设置博客数据
+					setError(null)
+					// 清除错误
+					markAsRead(slug)
+					// 标记文章为已读
 				}
 			} catch (e: any) {
 				// 处理加载错误
@@ -71,9 +76,11 @@ export default function Page() {
 
 		// 组件卸载时的清理函数
 		return () => {
-			cancelled = true // 标记为取消，防止状态更新
+			cancelled = true
+			// 标记为取消，防止状态更新
 		}
-	}, [slug, markAsRead]) // 依赖项：slug 或 markAsRead 变化时重新执行
+	}, [slug, markAsRead])
+	// 依赖项：slug 或 markAsRead 变化时重新执行
 
 	// 4. 计算衍生数据（使用 useMemo 优化性能）
 	// 计算文章标题（优先用配置中的标题，否则用 slug）
@@ -124,11 +131,16 @@ export default function Page() {
 
 			{/* 动画编辑按钮（仅在非移动端显示） */}
 			<motion.button
-				initial={{ opacity: 0, scale: 0.6 }} // 初始动画状态
-				animate={{ opacity: 1, scale: 1 }} // 进入动画
-				whileHover={{ scale: 1.05 }} // 悬停动画
-				whileTap={{ scale: 0.95 }} // 点击动画
-				onClick={handleEdit} // 点击事件
+				initial={{ opacity: 0, scale: 0.6 }}
+				// 初始动画状态
+				animate={{ opacity: 1, scale: 1 }}
+				// 进入动画
+				whileHover={{ scale: 1.05 }}
+				// 悬停动画
+				whileTap={{ scale: 0.95 }}
+				// 点击动画
+				onClick={handleEdit}
+				// 点击事件
 				className='absolute top-4 right-6 rounded-xl border bg-white/60 px-6 py-2 text-sm backdrop-blur-sm transition-colors hover:bg-white/80 max-sm:hidden'>
 				编辑
 			</motion.button>

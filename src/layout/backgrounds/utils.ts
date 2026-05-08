@@ -25,8 +25,10 @@ export function makeNoise2D(random = Math.random) {
 	 * @returns 梯度向量与 (x, y) 的点积
 	 */
 	function grad2(hash: number, x: number, y: number) {
-		const h = hash & 7          // 取低 3 位，得到 0~7 的索引
-		const u = h < 4 ? x : y     // 前 4 种梯度使用 (x, y) 顺序，后 4 种使用 (y, x) 顺序
+		const h = hash & 7
+		// 取低 3 位，得到 0~7 的索引
+		const u = h < 4 ? x : y
+		// 前 4 种梯度使用 (x, y) 顺序，后 4 种使用 (y, x) 顺序
 		const v = h < 4 ? y : x
 		// hash & 1 决定 u 的符号，hash & 2 决定 v 的符号（并且 v 的系数是 2）
 		return (h & 1 ? -u : u) + (h & 2 ? -2 * v : 2 * v)
@@ -49,13 +51,16 @@ export function makeNoise2D(random = Math.random) {
 		// 第一步：歪斜变换，将输入点从正交坐标映射到单纯形空间。
 		// 这样可以确定该点位于哪个正三角形（2D 单纯形）的内部。
 		const s = (xin + yin) * F2
-		const i = Math.floor(xin + s)   // 歪斜后的整数坐标，对应单纯形网格的"顶点单元"
+		const i = Math.floor(xin + s)
+		// 歪斜后的整数坐标，对应单纯形网格的"顶点单元"
 		const j = Math.floor(yin + s)
 
 		// 第二步：逆歪斜，得到该单元原点在原始空间中的坐标。
 		const t = (i + j) * G2
-		const X0 = i - t   // (i,j) 单元原点转换回原始空间的 X 坐标
-		const Y0 = j - t   // (i,j) 单元原点转换回原始空间的 Y 坐标
+		const X0 = i - t 
+		// (i,j) 单元原点转换回原始空间的 X 坐标
+		const Y0 = j - t 
+		// (i,j) 单元原点转换回原始空间的 Y 坐标
 
 		// 第三步：计算该点相对于单元原点的偏移量 (x0, y0)
 		const x0 = xin - X0
@@ -88,8 +93,10 @@ export function makeNoise2D(random = Math.random) {
 		if (t0 >= 0) {
 			// 从排列表中取出该顶点的随机哈希值，用于生成梯度
 			const gi0 = p[ii + p[jj]]
-			const t0_4 = t0 * t0 * t0 * t0   // 衰减值的四次方，使贡献光滑衰减
-			n0 = t0_4 * grad2(gi0, x0, y0)   // 衰减因子乘以梯度点积
+			const t0_4 = t0 * t0 * t0 * t0 
+			// 衰减值的四次方，使贡献光滑衰减
+			n0 = t0_4 * grad2(gi0, x0, y0)
+			// 衰减因子乘以梯度点积
 		}
 
 		// 第二个顶点的贡献

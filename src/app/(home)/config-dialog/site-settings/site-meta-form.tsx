@@ -1,6 +1,6 @@
+'use client'
 // 🔧 Next.js 13+ App Router 指令：标记此组件为「客户端组件」
 // （必须放在文件第一行，用于启用 useState、useEffect 等 React 客户端特性）
-'use client'
 
 // 📦 类型导入：从全局状态管理文件中导入「站点内容」的 TypeScript 类型定义
 import type { SiteContent } from '../../stores/config-store'

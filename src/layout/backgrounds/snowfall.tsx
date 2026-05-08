@@ -1,18 +1,26 @@
-'use client' // Next.js 客户端组件声明，因为使用了浏览器 API（如 window）和 React 状态/动画
+'use client'
+// Next.js 客户端组件声明，因为使用了浏览器 API（如 window）和 React 状态/动画
 
 import { useEffect, useState } from 'react'
-import { motion } from 'motion/react' // 从 motion 库引入动画组件
+import { motion } from 'motion/react'
 
 // 定义雪花对象的类型
 interface Snowflake {
   id: number
-  type: 'dot' | 'image'            // 雪花类型：圆点或图片
-  imageIndex?: number              // 当类型为图片时，使用的图片索引
-  size: number                     // 雪花尺寸（宽高一致）
-  duration: number                 // 一次完整下落动画的持续时间（秒）
-  delay: number                    // 动画开始前的延迟时间（秒）
-  left: number                     // 水平起始位置（百分比，相对于视口宽度）
-  rotate: number                   // 图片雪花的旋转角度（圆点不旋转）
+  type: 'dot' | 'image'
+  // 雪花类型：圆点或图片
+  imageIndex?: number
+  // 当类型为图片时，使用的图片索引
+  size: number
+  // 雪花尺寸（宽高一致）
+  duration: number
+  // 一次完整下落动画的持续时间（秒）
+  delay: number
+  // 动画开始前的延迟时间（秒）
+  left: number
+  // 水平起始位置（百分比，相对于视口宽度）
+  rotate: number
+  // 图片雪花的旋转角度（圆点不旋转）
 }
 
 // 可选雪花图片路径数组
@@ -80,7 +88,8 @@ export default function SnowfallBackground({
       transition={{ duration: 1 }}
       // 固定定位，覆盖整个屏幕，禁止鼠标事件，隐藏溢出内容
       className='pointer-events-none fixed inset-0 z-0 overflow-hidden'
-      style={{ zIndex }} // 通过 props 控制层级
+      style={{ zIndex }}
+      // 通过 props 控制层级
     >
       {/* 遍历渲染所有雪花 */}
       {snowflakes.map(snowflake => (
@@ -88,8 +97,10 @@ export default function SnowfallBackground({
           key={snowflake.id}
           className='absolute'
           style={{
-            top: -200, // 初始位置在屏幕上方200px，确保从不可见区域开始
-            left: `${snowflake.left}%`, // 水平位置
+            top: -200, 
+            // 初始位置在屏幕上方200px，确保从不可见区域开始
+            left: `${snowflake.left}%`,
+            // 水平位置
             width: `${snowflake.size}px`,
             height: `${snowflake.size}px`
           }}
@@ -106,8 +117,10 @@ export default function SnowfallBackground({
           transition={{
             duration: snowflake.duration,
             delay: snowflake.delay,
-            repeat: Infinity,    // 无限循环
-            ease: 'linear'       // 匀速下落，模拟真实飘落感
+            repeat: Infinity,
+            // 无限循环
+            ease: 'linear'
+            // 匀速下落，模拟真实飘落感
           }}
         >
           {/* 根据类型渲染圆点或图片 */}

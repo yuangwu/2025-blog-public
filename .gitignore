@@ -64,17 +64,32 @@ yarn-error.log*
 # pnpm 调试日志
 
 # env files (can opt-in for committing if needed)
+# ---------- 环境变量文件 ----------
 .env*
+# 所有以 .env 开头的文件（如 .env, .env.local, .env.production 等）
+                    # 通常包含敏感信息（API 密钥等），不应提交
+                    # 如果需要提交示例文件，可以手动用 git add -f 或单独取消忽略
 
 # vercel
+# ---------- Vercel ----------
 .vercel
+ # Vercel 部署平台生成的配置/输出目录，不需提交
+
 # cloudflare
+# ---------- Cloudflare ----------
 .output
+# Cloudflare Pages 或 Workers 的构建输出目录
 .wrangler
+# Wrangler（Cloudflare 开发工具）的状态/缓存目录
 
 # typescript
+# ---------- TypeScript ----------
 *.tsbuildinfo
+# TypeScript 增量编译信息文件，自动生成，不需要版本控制
 next-env.d.ts
+# Next.js 自动生成的 TypeScript 环境类型声明文件，每次 next dev 都会更新，无需手动编辑
 
 #vscode
+# ---------- VS Code 历史记录插件 ----------
 .history/
+# 本地历史记录插件（如 Local History）生成的文件夹，个人编辑历史，与项目无关

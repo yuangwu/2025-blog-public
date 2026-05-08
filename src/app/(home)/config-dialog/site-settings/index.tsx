@@ -1,21 +1,20 @@
+'use client'
 // 🔧 Next.js 13+ App Router 指令：标记此组件为【客户端组件】
 // 意味着该组件可使用 useState、useEffect 等 React 客户端特性
-'use client'
 
 // 📦 类型导入（仅用于类型检查，不影响编译后体积）
 // 从全局配置 store 导入网站内容类型定义
 import type { SiteContent } from '../../stores/config-store'
-// 从本地 types 文件导入各种文件上传相关的类型定义
 import type { ArtImageUploads, BackgroundImageUploads, FileItem, SocialButtonImageUploads } from './types'
 
 // 🧩 组件导入：引入所有子功能模块组件
-import { FaviconAvatarUpload } from './favicon-avatar-upload' // 网站图标/头像上传模块
-import { SiteMetaForm } from './site-meta-form'                 // 网站元信息（标题/描述等）表单
-import { ArtImagesSection } from './art-images-section'          // 艺术图片配置区
-import { BackgroundImagesSection } from './background-images-section' // 背景图片配置区
-import { SocialButtonsSection } from './social-buttons-section'  // 社交按钮配置区
-import { HatSection } from './hat-section'                       // （推测是）顶部装饰/标题区配置
-import { BeianForm } from './beian-form'                         // 备案信息表单（中文网站特有）
+import { FaviconAvatarUpload } from './favicon-avatar-upload'
+import { SiteMetaForm } from './site-meta-form'
+import { ArtImagesSection } from './art-images-section'
+import { BackgroundImagesSection } from './background-images-section'
+import { SocialButtonsSection } from './social-buttons-section'
+import { HatSection } from './hat-section'
+import { BeianForm } from './beian-form'
 
 // 🔄 类型再导出：方便外部直接从当前文件引用这些类型
 export type { FileItem, ArtImageUploads, BackgroundImageUploads, SocialButtonImageUploads } from './types'

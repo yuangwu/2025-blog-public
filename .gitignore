@@ -1,35 +1,67 @@
+# ============================================================
+# 以下是一个典型的 .gitignore 文件，用于告诉 Git 哪些文件/目录不需要被追踪。
+# 以 # 开头的行是注释，以 ! 开头的行表示“例外”（即重新包含）。
+# ============================================================
+
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# 参见 https://help.github.com/articles/ignoring-files/ 了解忽略文件的更多信息。
+# （这是一个参考链接，可忽略）
 
 # dependencies
+# ---------- 依赖 ----------
 /node_modules
+# 忽略项目根目录下的 node_modules 文件夹，里面是安装的第三方包，不应提交到版本库
 /.pnp
+# 忽略根目录下的 .pnp 文件夹（Yarn PnP 零安装模式使用）
 .pnp.*
+# 忽略所有以 .pnp. 开头的文件（如 .pnp.cjs, .pnp.loader.mjs 等）
 .yarn/*
+# 忽略 .yarn 目录下的所有内容
 !.yarn/patches
+# 但是不忽略 .yarn/patches 文件夹（存放手动补丁，需要版本控制）
 !.yarn/plugins
+# 不忽略 .yarn/plugins     （自定义插件）
 !.yarn/releases
+# 不忽略 .yarn/releases    （Yarn 的可执行版本文件，推荐提交）
 !.yarn/versions
+# 不忽略 .yarn/versions    （Yarn 发布的版本信息，用于约束版本策略）
 
 # testing
+# ---------- 测试 ----------
 /coverage
+# 忽略根目录下的 coverage 目录，里面是测试覆盖率报告，自动生成，不需要提交
 
 # next.js
+# ---------- Next.js ----------
 /.next/
+# Next.js 编译输出目录，每次构建都会重新生成
 /.open-next/
+# 用于 OpenNext 的构建产物（将 Next.js 部署到非 Vercel 平台时生成）
 /out/
+# 静态导出（next export）的输出目录
 
 # production
+# ---------- 生产构建 ----------
 /build
+# 忽略根目录下的 build 文件夹（例如 React 等工具打包后的生产文件）
 
 # misc
+# ---------- 杂项 ----------
 .DS_Store
+# macOS 系统自动生成的文件夹属性文件，与项目无关
 *.pem
+# 所有 .pem 后缀的私钥文件（如 HTTPS 证书密钥），避免泄露
 
 # debug
+# ---------- 调试日志 ----------
 npm-debug.log*
+# npm 调试日志，以 npm-debug.log 开头的文件都忽略
 yarn-debug.log*
+# Yarn 调试日志
 yarn-error.log*
+# Yarn 错误日志
 .pnpm-debug.log*
+# pnpm 调试日志
 
 # env files (can opt-in for committing if needed)
 .env*

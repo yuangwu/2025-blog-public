@@ -1,28 +1,29 @@
 // 声明这是一个客户端组件（Next.js App Router），仅在浏览器端运行
 'use client'
 
-// 导入动画组件，用于页面淡入效果
 import { motion } from 'motion/react'
-// 全局常量：初始渲染延迟时间（秒）
 import { INIT_DELAY } from '@/consts'
-// 自定义 Hook：将 Markdown 文本解析为 React 元素，并返回目录和加载状态
 import { useMarkdownRender } from '@/hooks/use-markdown-render'
-// 自定义 Hook：获取当前视口尺寸，用于响应式判断
 import { useSize } from '@/hooks/use-size'
-// 博客侧边栏组件，展示封面、摘要、目录等
 import { BlogSidebar } from '@/components/blog-sidebar'
-// 全局配置状态管理（Zustand），用于读取站点级别的设置
 import { useConfigStore } from '@/app/(home)/stores/config-store'
 
 // 博客预览组件的 Props 类型定义
 type BlogPreviewProps = {
-	markdown: string   // Markdown 原始字符串
-	title: string      // 文章标题
-	tags: string[]     // 标签列表
-	date: string       // 发布日期字符串
-	summary?: string   // 文章摘要（可选）
-	cover?: string     // 封面图片地址（可选）
-	slug?: string      // 文章唯一标识（可选）
+	markdown: string
+	// Markdown 原始字符串
+	title: string
+	// 文章标题
+	tags: string[]
+	// 标签列表
+	date: string
+	// 发布日期字符串
+	summary?: string
+	// 文章摘要（可选）
+	cover?: string
+	// 封面图片地址（可选）
+	slug?: string
+	// 文章唯一标识（可选）
 }
 
 // 博客预览组件：展示文章的主体内容、标签、日期以及可选侧边栏
@@ -47,9 +48,12 @@ export function BlogPreview({ markdown, title, tags, date, summary, cover, slug 
 		<div className='mx-auto flex max-w-[1140px] justify-center gap-6 px-6 pt-28 pb-12 max-sm:px-0'>
 			{/* 文章主体区域，使用 framer-motion 实现淡入动画 */}
 			<motion.article
-				initial={{ opacity: 0 }}          // 动画初始状态：透明
-				animate={{ opacity: 1 }}          // 动画结束状态：完全可见
-				transition={{ delay: INIT_DELAY }} // 动画延迟，使用全局定义的延迟常量
+				initial={{ opacity: 0 }}
+				// 动画初始状态：透明
+				animate={{ opacity: 1 }}
+				// 动画结束状态：完全可见
+				transition={{ delay: INIT_DELAY }}
+				// 动画延迟，使用全局定义的延迟常量
 				className='card bg-article static flex-1 overflow-auto rounded-xl p-8'
 			>
 				<div>

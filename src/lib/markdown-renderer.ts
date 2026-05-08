@@ -1,13 +1,21 @@
+// 从 marked 库导入 marked 解析器和 Tokens 类型
 import { marked } from 'marked'
 import type { Tokens } from 'marked'
 
+// 目录项类型：包含锚点 id、显示文本和标题级别
 export type TocItem = { id: string; text: string; level: number }
 
+// Markdown 渲染结果接口：包含生成的 HTML 字符串和目录数组
 export interface MarkdownRenderResult {
 	html: string
 	toc: TocItem[]
 }
 
+/**
+ * 将文本转换为符合 URL 规范的 slug（用于标题锚点）
+ * 规则：转为小写，移除非法字符（保留字母、数字、中文字符、空格和短横线），
+ * 首尾去空格，最后将连续空格替换为单个短横线
+ */
 export function slugify(text: string): string {
 	return text
 		.toLowerCase()
@@ -16,10 +24,13 @@ export function slugify(text: string): string {
 		.replace(/\s+/g, '-')
 }
 
-// Lazy load shiki to handle environments where it's not available (e.g., Cloudflare Workers)
+// 延迟加载 shiki 高亮库，以应对某些不支持的环境（如 Cloudflare Workers）
 let shikiModule: typeof import('shiki') | null = null
 let shikiLoadAttempted = false
 
+/**
+ * 异步加载 shiki 模块（仅尝试一次）
+ */
 async function loadShiki() {
 	if (shikiLoadAttempted) {
 		return shikiModule
@@ -35,18 +46,21 @@ async function loadShiki() {
 	}
 }
 
-// Lazy load katex to handle environments where it's not available (e.g., Cloudflare Workers)
+// 延迟加载 katex 数学公式渲染库，以应对不支持的环境
 let katexModule: typeof import('katex') | null = null
 let katexLoadAttempted = false
 
+/**
+ * 异步加载 katex 模块（仅尝试一次）
+ * 注意：katex 发布为 CJS 模块，在不同打包器/运行时可能需要从 .default 获取
+ */
 async function loadKatex() {
 	if (katexModule) return katexModule
 	if (katexLoadAttempted) return null
 	katexLoadAttempted = true
 
 	try {
-		// katex is published as CJS; depending on bundler/runtime the dynamic import
-		// may return either the exports object directly or as `default`.
+		// katex 是 CJS 模块；动态导入可能返回整个导出对象，也可能挂在 default 上
 		const mod: any = await import('katex')
 		katexModule = (mod?.default ?? mod) as any
 		return katexModule
@@ -56,44 +70,51 @@ async function loadKatex() {
 	}
 }
 
+/**
+ * 主渲染函数：将 Markdown 字符串解析为 HTML，并提取目录
+ * 支持 Shiki 代码高亮、Katex 数学公式、任务列表和自定义 slug
+ */
 export async function renderMarkdown(markdown: string): Promise<MarkdownRenderResult> {
-	// Load optional renderers first so they apply on the FIRST lex/parse pass.
-	// (If we lex before registering extensions, math tokens won't ever be produced on a cold refresh.)
+	// 用于存储代码块的原始内容和渲染后的 HTML，key 为占位符标识
 	const codeBlockMap = new Map<string, { html: string; original: string }>()
+	// 提前并行加载可选渲染器，确保在第一次解析（lex）前已注册扩展
 	const [shiki, katex] = await Promise.all([loadShiki(), loadKatex()])
 
-	// Render HTML with heading ids
+	// 创建自定义的 marked 渲染器实例
 	const renderer = new marked.Renderer()
 
+	// 自定义标题渲染：自动添加 id 属性（基于标题文本生成 slug）
 	renderer.heading = (token: Tokens.Heading) => {
 		const id = slugify(token.text || '')
 		return `<h${token.depth} id="${id}">${token.text}</h${token.depth}>`
 	}
 
+	// 自定义代码块渲染：优先使用 Shiki 高亮，同时携带原始代码（用于复制功能）
 	renderer.code = (token: Tokens.Code) => {
-		// Check if this code block was pre-processed
+		// 检查当前代码块是否已被预处理并放入 codeBlockMap
 		const codeData = codeBlockMap.get(token.text)
 		if (codeData) {
-			// Add data-code attribute with original code for copy functionality
-			// Escape HTML entities for attribute value
+			// 转义 HTML 特殊字符，防止 XSS
 			const escapedCode = codeData.original.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 			if (codeData.html) {
-				// Shiki highlighted code
+				// 使用 Shiki 渲染的 HTML
 				return `<pre data-code="${escapedCode}">${codeData.html}</pre>`
 			}
-			// Fallback for failed highlighting
+			// Shiki 不可用或渲染失败的降级方案
 			return `<pre data-code="${escapedCode}"><code>${codeData.original}</code></pre>`
 		}
-		// Fallback to default (inline code, not code block)
+		// 默认内联代码渲染（正常情况下代码块都会经过预处理，此处为兜底）
 		return `<code>${token.text}</code>`
 	}
 
+	// 自定义列表项渲染：支持任务列表和列表内联 Markdown 解析
 	renderer.listitem = (token: Tokens.ListItem) => {
-		// Render inline markdown inside list items (e.g. links, emphasis)
 		let inner = token.text
 		let tokens = token.tokens
 
+		// 任务列表标记常作为额外 token 存在，需移除
 		if (token.task) tokens = tokens.slice(1)
+		// 重新解析 tokens 为内联 HTML，保留链接、强调等
 		inner = marked.parser(tokens) as string
 
 		if (token.task) {
@@ -104,29 +125,32 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 		return `<li>${inner}</li>\n`
 	}
 
+	// 数学公式渲染函数（行内或块级）
 	const renderMath = (content: string, displayMode: boolean) => {
 		if (!katex) {
-			// Keep original delimiters if katex is not available
+			// Katex 未加载时保留原始分隔符
 			return displayMode ? `$$${content}$$` : `$${content}$`
 		}
 
 		try {
 			return katex.renderToString(content, {
 				displayMode,
-				throwOnError: false,
+				throwOnError: false,  // 出错不抛异常，返回错误信息
 				output: 'html',
-				strict: 'ignore'
+				strict: 'ignore'      // 忽略严格模式下的警告
 			})
 		} catch {
+			// 极端情况下的兜底
 			return displayMode ? `$$${content}$$` : `$${content}$`
 		}
 	}
 
-	// Register extensions BEFORE lexing so math gets tokenized on cold refresh.
+	// 注册 marked 扩展（包括渲染器和数学公式标记识别）
+	// 扩展必须在 lex 之前注册，否则冷刷新时数学公式不会被识别
 	marked.use({
 		renderer,
 		extensions: [
-			// Block math: $$ ... $$
+			// 块级数学公式：$$ ... $$
 			{
 				name: 'mathBlock',
 				level: 'block',
@@ -146,7 +170,7 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 					return `${renderMath(token.text || '', true)}\n`
 				}
 			},
-			// Inline math: $ ... $
+			// 行内数学公式：$ ... $
 			{
 				name: 'mathInline',
 				level: 'inline',
@@ -155,7 +179,7 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 					return idx === -1 ? undefined : idx
 				},
 				tokenizer(src: string) {
-					// Avoid $$ (block) and escaped dollars
+					// 避免匹配块级公式（$$）和转义美元符号（\$）
 					if (src.startsWith('$$')) return
 					if (src.startsWith('\\$')) return
 
@@ -163,7 +187,7 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 					if (!match) return
 
 					const inner = match[1]
-					// Heuristic: require some non-space content
+					// 启发式规则：确保内部不是全空白
 					if (!inner || !inner.trim()) return
 
 					return {
@@ -179,20 +203,20 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 		]
 	})
 
-	// Pre-process with marked lexer first (after extensions are registered)
+	// 先使用 marked lexer 解析（此时扩展已注册，数学标记会被正确 tokenize）
 	const tokens = marked.lexer(markdown)
 
-	// Extract TOC from parsed tokens (this correctly skips code blocks)
+	// 从解析后的 tokens 中提取目录（只提取 <= 3 级标题，且会忽略代码块内的内容）
 	const toc: TocItem[] = []
 	function extractHeadings(tokenList: typeof tokens) {
 		for (const token of tokenList) {
 			if (token.type === 'heading' && token.depth <= 3) {
-				// Use the parsed text (markdown syntax like links/code already stripped)
+				// 使用已解析的纯文本（链接、代码等标记已被去除）
 				const text = token.text
 				const id = slugify(text)
 				toc.push({ id, text, level: token.depth })
 			}
-			// Recursively check nested tokens (e.g., in blockquotes, lists)
+			// 递归处理嵌套 token（如引用块、列表内的标题）
 			if ('tokens' in token && token.tokens) {
 				extractHeadings(token.tokens as typeof tokens)
 			}
@@ -200,7 +224,7 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 	}
 	extractHeadings(tokens)
 
-	// Pre-process code blocks with Shiki
+	// 预处理代码块：将每个 code token 替换为占位符，并尝试使用 Shiki 高亮
 	for (const token of tokens) {
 		if (token.type === 'code') {
 			const codeToken = token as Tokens.Code
@@ -214,19 +238,20 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 						theme: 'one-light'
 					})
 					codeBlockMap.set(key, { html, original: originalCode })
-					codeToken.text = key
+					codeToken.text = key  // 将 token 文本替换为占位符，之后渲染时再从 map 中取回
 				} catch {
-					// Keep original if highlighting fails
+					// 高亮失败时保留原始代码
 					codeBlockMap.set(key, { html: '', original: originalCode })
 					codeToken.text = key
 				}
 			} else {
-				// Fallback when shiki is not available
+				// Shiki 不可用时的降级方案
 				codeBlockMap.set(key, { html: '', original: originalCode })
 				codeToken.text = key
 			}
 		}
 	}
+	// 最终解析为 HTML 字符串
 	const html = (marked.parser(tokens) as string) || ''
 
 	return { html, toc }

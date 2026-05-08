@@ -1,81 +1,54 @@
 'use client'
-// 👆 声明该文件为客户端组件（Next.js App Router），确保可以使用浏览器 API 和事件处理
 
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { motion } from 'motion/react'
 import { ANIMATION_DELAY, INIT_DELAY } from '@/consts'
-// 👆 从常量文件中引入动画延迟时间，用于控制入场动画的节奏
-
 import { DialogModal } from '@/components/dialog-modal'
-// 👆 引入自定义的模态框组件，用于图片对比
 
-// 转换后的图片元数据
 type ConvertedMeta = {
-	url: string // 转换后 Blob 的临时 URL
-	size: number // 转换后文件大小（字节）
+	url: string
+	size: number
 }
 
-// 用户选择的单张图片的完整状态
 type SelectedImage = {
-	file: File // 原始文件对象
-	preview: string // 原图的预览 URL（通过 createObjectURL 生成）
-	width: number // 原图宽度
-	height: number // 原图高度
-	converted?: ConvertedMeta // 转换后的信息（如果已转换）
-	converting?: boolean // 是否正在转换中
+	file: File
+	preview: string
+	width: number
+	height: number
+	converted?: ConvertedMeta
+	converting?: boolean
 }
 
-// 文件名最大显示长度（超出则用省略号截断）
 const MAX_NAME_LENGTH = 32
 
-/**
- * 获取文件名后缀（包含点号），如 ".jpg"
- */
 function getFileExtension(name: string) {
 	const idx = name.lastIndexOf('.')
 	return idx >= 0 ? name.slice(idx) : ''
 }
 
-/**
- * 格式化显示文件名，超出 MAX_NAME_LENGTH 时中间用 "..." 截断，保留后缀
- */
 function formatFileName(name: string) {
 	if (name.length <= MAX_NAME_LENGTH) return name
 	const ext = getFileExtension(name)
-	// 没有后缀的情况：直接尾部加省略号
 	if (!ext) {
 		return `${name.slice(0, MAX_NAME_LENGTH - 3)}...`
 	}
-	// 预留后缀长度和三个点的空间
 	const maxBaseLength = Math.max(1, MAX_NAME_LENGTH - ext.length - 3)
 	return `${name.slice(0, maxBaseLength)}...${ext}`
 }
 
-/**
- * 将字节数格式化为人类可读的字符串（B / KB / MB）
- */
 function formatBytes(bytes: number) {
 	if (bytes < 1024) return `${bytes.toFixed(0)} B`
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
 	return `${(bytes / 1024 / 1024).toFixed(2)} MB`
 }
 
-/**
- * 将给定的图片 File 转换为 WEBP 格式的 Blob
- * @param file 原始图片文件
- * @param quality 质量 0-1
- * @param maxWidth 可选的最大宽度，超出则等比缩放
- * @returns WEBP 格式的 Blob
- */
 async function fileToWebp(file: File, quality: number, maxWidth?: number) {
-	// 将文件解码为 ImageBitmap，性能优于创建 Image 元素
 	const bitmap = await createImageBitmap(file)
 	const canvas = document.createElement('canvas')
 
 	let width = bitmap.width
 	let height = bitmap.height
 
-	// 如果设置了最大宽度且原图更宽，则等比缩放
 	if (maxWidth && width > maxWidth) {
 		const ratio = maxWidth / width
 		width = maxWidth
@@ -86,9 +59,7 @@ async function fileToWebp(file: File, quality: number, maxWidth?: number) {
 	canvas.height = height
 	const ctx = canvas.getContext('2d')
 	if (!ctx) throw new Error('无法初始化画布')
-	// 将图片绘制到 canvas 上
 	ctx.drawImage(bitmap, 0, 0, width, height)
-	// 通过 canvas.toBlob 导出为 WEBP
 	const blob = await new Promise<Blob>((resolve, reject) => {
 		canvas.toBlob(
 			result => {
@@ -103,41 +74,28 @@ async function fileToWebp(file: File, quality: number, maxWidth?: number) {
 }
 
 export default function Page() {
-	// ==================== 状态管理 ====================
-	const [images, setImages] = useState<SelectedImage[]>([]) // 已选图片列表
-	const [quality, setQuality] = useState(0.8) // 转换质量（0.3-1）
-	const [limitMaxWidth, setLimitMaxWidth] = useState(false) // 是否限制最大宽度
-	const [maxWidth, setMaxWidth] = useState(1200) // 最大宽度值
-	const [batchConverting, setBatchConverting] = useState(false) // 是否正在批量转换
-	const [compareIndex, setCompareIndex] = useState<number | null>(null) // 对比弹窗中显示的图片索引
-	const [isDragging, setIsDragging] = useState(false) // 是否正在拖拽文件到上传区域
-
-	// 派生状态，提升可读性
+	const [images, setImages] = useState<SelectedImage[]>([])
+	const [quality, setQuality] = useState(0.8)
+	const [limitMaxWidth, setLimitMaxWidth] = useState(false)
+	const [maxWidth, setMaxWidth] = useState(1200)
+	const [batchConverting, setBatchConverting] = useState(false)
+	const [compareIndex, setCompareIndex] = useState<number | null>(null)
+	const [isDragging, setIsDragging] = useState(false)
 	const hasImages = images.length > 0
-	const hasConvertible = images.length > 0 // 有图片就可以转换（与 hasImages 相同，保留以表意）
-	const hasConverted = images.some(item => !!item.converted) // 是否存在已转换的图片
-
-	// 用于在闭包（如批量转换循环）中获取最新的 images 状态
+	const hasConvertible = images.length > 0
+	const hasConverted = images.some(item => !!item.converted)
 	const imagesRef = useRef<SelectedImage[]>([])
-	// 拖拽计数器，处理嵌套元素触发 dragenter/dragleave 的问题
 	const dragCounterRef = useRef(0)
 
-	// 同步 images 到 ref，保证异步操作中能读取到最新列表
 	useEffect(() => {
 		imagesRef.current = images
 	}, [images])
 
-	/**
-	 * 处理用户选择的文件（通过 input 或拖拽）
-	 * 去重逻辑：根据文件名、大小、最后修改时间判断是否重复
-	 */
 	const handleFiles = useCallback(async (fileList: FileList | null) => {
 		if (!fileList?.length) return
-		// 仅保留图片类型的文件
 		const files = Array.from(fileList).filter(file => file.type.startsWith('image/'))
 		if (!files.length) return
 
-		// 并行生成预览 URL 与获取尺寸
 		const nextItems = await Promise.all(
 			files.map(async file => {
 				const preview = URL.createObjectURL(file)
@@ -151,21 +109,16 @@ export default function Page() {
 			})
 		)
 
-		// 去重后更新状态
 		setImages(prev => {
 			const deduped = [...prev]
 			nextItems.forEach(item => {
 				const exists = deduped.some(existing => {
-					return (
-						existing.file.name === item.file.name &&
-						existing.file.size === item.file.size &&
-						existing.file.lastModified === item.file.lastModified
-					)
+					return existing.file.name === item.file.name && existing.file.size === item.file.size && existing.file.lastModified === item.file.lastModified
 				})
+
 				if (!exists) {
 					deduped.push(item)
 				} else {
-					// 重复文件则释放刚生成的预览 URL，避免内存泄漏
 					URL.revokeObjectURL(item.preview)
 				}
 			})
@@ -173,11 +126,9 @@ export default function Page() {
 		})
 	}, [])
 
-	// ==================== 拖拽事件处理 ====================
 	const handleDragEnter = useCallback((event: DragEvent<HTMLLabelElement>) => {
 		event.preventDefault()
 		event.stopPropagation()
-		// 使用计数器避免子元素触发 dragleave 时误判离开
 		dragCounterRef.current += 1
 		setIsDragging(true)
 	}, [])
@@ -207,21 +158,16 @@ export default function Page() {
 		[handleFiles]
 	)
 
-	// 计算所有图片总大小（用于显示）
 	const totalSize = useMemo(() => {
 		const bytes = images.reduce((acc, item) => acc + item.file.size, 0)
 		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
 		return `${(bytes / 1024 / 1024).toFixed(2)} MB`
 	}, [images])
 
-	/**
-	 * 转换单张图片为 WEBP
-	 */
 	const handleConvertImage = useCallback(
 		async (index: number) => {
 			const target = images[index]
 			if (!target || target.converting) return
-			// 标记为转换中
 			setImages(prev => prev.map((item, idx) => (idx === index ? { ...item, converting: true } : item)))
 			try {
 				const blob = await fileToWebp(target.file, quality, limitMaxWidth ? maxWidth : undefined)
@@ -229,7 +175,6 @@ export default function Page() {
 				setImages(prev =>
 					prev.map((item, idx) => {
 						if (idx !== index) return item
-						// 如果之前已有转换结果，释放旧的 Blob URL
 						if (item.converted?.url) {
 							URL.revokeObjectURL(item.converted.url)
 						}
@@ -246,22 +191,18 @@ export default function Page() {
 			} catch (error) {
 				console.error(error)
 				alert('转换过程中出现问题，请稍后再试')
-				// 转换失败恢复状态
 				setImages(prev => prev.map((item, idx) => (idx === index ? { ...item, converting: false } : item)))
 			}
 		},
 		[images, quality, limitMaxWidth, maxWidth]
 	)
 
-	/**
-	 * 下载单张已转换的图片
-	 */
 	const handleDownloadImage = useCallback(
 		(index: number) => {
 			const target = images[index]
 			if (!target?.converted) return
 			const link = document.createElement('a')
-			const baseName = target.file.name.replace(/\.[^.]+$/, '') // 去除原后缀
+			const baseName = target.file.name.replace(/\.[^.]+$/, '')
 			link.href = target.converted.url
 			link.download = `${baseName}.webp`
 			document.body.appendChild(link)
@@ -271,10 +212,6 @@ export default function Page() {
 		[images]
 	)
 
-	/**
-	 * 批量转换所有图片
-	 * 通过 for 循环串行转换，每张转换时更新状态以便 UI 反映进度
-	 */
 	const handleConvertAll = useCallback(async () => {
 		if (!hasImages || batchConverting) return
 		setBatchConverting(true)
@@ -282,7 +219,6 @@ export default function Page() {
 			for (let i = 0; i < imagesRef.current.length; i += 1) {
 				const current = imagesRef.current[i]
 				if (!current) continue
-				// 设置当前图片为转换中
 				setImages(prev => prev.map((item, idx) => (idx === i ? { ...item, converting: true } : item)))
 				const blob = await fileToWebp(current.file, quality, limitMaxWidth ? maxWidth : undefined)
 				const url = URL.createObjectURL(blob)
@@ -311,9 +247,6 @@ export default function Page() {
 		}
 	}, [batchConverting, hasImages, quality, limitMaxWidth, maxWidth])
 
-	/**
-	 * 下载全部已转换的图片（逐个触发下载）
-	 */
 	const handleDownloadAll = useCallback(() => {
 		if (!hasConverted) return
 		images.forEach(item => {
@@ -328,9 +261,6 @@ export default function Page() {
 		})
 	}, [images, hasConverted])
 
-	/**
-	 * 移除指定图片，同时释放相关的 Blob URL
-	 */
 	const handleRemoveImage = useCallback((index: number) => {
 		setImages(prev => {
 			const next = [...prev]
@@ -345,17 +275,14 @@ export default function Page() {
 		})
 	}, [])
 
-	// 打开对比弹窗
 	const handleCompareImage = useCallback((index: number) => {
 		setCompareIndex(index)
 	}, [])
 
-	// 关闭对比弹窗
 	const handleCloseCompare = useCallback(() => {
 		setCompareIndex(null)
 	}, [])
 
-	// 组件卸载时释放所有 Blob URL，防止内存泄漏
 	useEffect(() => {
 		return () => {
 			imagesRef.current.forEach(item => {
@@ -367,11 +294,9 @@ export default function Page() {
 		}
 	}, [])
 
-	// ==================== 渲染 ====================
 	return (
 		<div className='relative px-6 pt-32 pb-12 text-sm max-sm:pt-28'>
 			<div className='mx-auto flex max-w-3xl flex-col gap-6'>
-				{/* 页面标题区域 */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
@@ -382,7 +307,6 @@ export default function Page() {
 					<p className='text-secondary'>选择图片 → 调整质量 → 一键转换下载</p>
 				</motion.div>
 
-				{/* 上传区域（label 包裹 input[type=file]） */}
 				<motion.label
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
@@ -394,14 +318,7 @@ export default function Page() {
 					className={`group hover:border-brand/20 card relative flex cursor-pointer flex-col items-center justify-center gap-3 text-center transition-colors hover:bg-white/80 ${
 						isDragging ? 'border-brand bg-white' : ''
 					}`}>
-					{/* 隐藏的原生文件选择器 */}
-					<input
-						type='file'
-						accept='image/*'
-						multiple
-						className='hidden'
-						onChange={event => handleFiles(event.target.files)}
-					/>
+					<input type='file' accept='image/*' multiple className='hidden' onChange={event => handleFiles(event.target.files)} />
 					<div className='bg-brand/10 text-brand/60 group-hover:bg-brand/10 flex h-20 w-20 items-center justify-center rounded-full text-3xl transition'>
 						📷
 					</div>
@@ -411,7 +328,6 @@ export default function Page() {
 					</div>
 				</motion.label>
 
-				{/* 已选图片列表 */}
 				{hasImages && (
 					<motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className='card relative'>
 						<div className='text-secondary flex items-center justify-between border-b border-slate-200 pb-3 text-xs tracking-[0.2em] uppercase'>
@@ -423,11 +339,9 @@ export default function Page() {
 								const { file, preview, converted, converting } = item
 								return (
 									<li key={`${file.name}-${index}`} className='flex items-center gap-4 py-3'>
-										{/* 缩略图 */}
 										<div className='h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-50'>
 											<img src={preview} alt={file.name} className='h-full w-full object-cover' />
 										</div>
-										{/* 文件信息 */}
 										<div className='flex flex-1 flex-col'>
 											<p className='font-medium'>{formatFileName(file.name)}</p>
 											<p className='text-secondary text-xs'>
@@ -435,7 +349,6 @@ export default function Page() {
 												{converted ? `（转换后 ${formatBytes(converted.size)}）` : ''}
 											</p>
 										</div>
-										{/* 操作按钮 */}
 										<div className='flex flex-wrap justify-end gap-2 text-xs'>
 											<button
 												onClick={() => handleConvertImage(index)}
@@ -470,7 +383,6 @@ export default function Page() {
 					</motion.div>
 				)}
 
-				{/* 参数配置与批量操作区域 */}
 				<motion.div
 					initial={{ opacity: 0, scale: 0.9 }}
 					animate={{ opacity: 1, scale: 1 }}
@@ -478,7 +390,6 @@ export default function Page() {
 					className='card relative'>
 					<div className='flex flex-wrap items-center gap-4'>
 						<div className='flex-1 space-y-4'>
-							{/* 质量滑块 */}
 							<div>
 								<p className='text-secondary text-xs tracking-[0.2em] uppercase'>质量</p>
 								<div className='flex items-center gap-3 pt-2'>
@@ -493,11 +404,8 @@ export default function Page() {
 									/>
 									<span className='w-12 text-right text-sm font-medium'>{Math.round(quality * 100)}%</span>
 								</div>
-								<p className='text-xs text-slate-500'>
-									使用 canvas.toDataURL('image/webp', {quality.toFixed(2)})
-								</p>
+								<p className='text-xs text-slate-500'>使用 canvas.toDataURL('image/webp', {quality.toFixed(2)})</p>
 							</div>
-							{/* 限制最大宽度选项 */}
 							<div className='flex items-center gap-3'>
 								<div className='flex items-center gap-2'>
 									<input
@@ -507,9 +415,7 @@ export default function Page() {
 										onChange={event => setLimitMaxWidth(event.target.checked)}
 										className='h-4 w-4 rounded border-slate-300'
 									/>
-									<label
-										htmlFor='limit-max-width'
-										className='text-secondary cursor-pointer text-xs tracking-[0.2em] uppercase'>
+									<label htmlFor='limit-max-width' className='text-secondary cursor-pointer text-xs tracking-[0.2em] uppercase'>
 										限制最大宽度
 									</label>
 								</div>
@@ -521,9 +427,7 @@ export default function Page() {
 											max={10000}
 											step={100}
 											value={maxWidth}
-											onChange={event =>
-												setMaxWidth(Math.max(100, parseInt(event.target.value) || 1200))
-											}
+											onChange={event => setMaxWidth(Math.max(100, parseInt(event.target.value) || 1200))}
 											className='w-24 rounded border border-slate-200 px-2 py-1 text-sm'
 										/>
 										<span className='text-xs text-slate-500'>px</span>
@@ -531,7 +435,6 @@ export default function Page() {
 								)}
 							</div>
 						</div>
-						{/* 全局操作按钮 */}
 						<div className='flex flex-wrap gap-2 text-sm'>
 							<button
 								onClick={handleConvertAll}
@@ -550,34 +453,19 @@ export default function Page() {
 				</motion.div>
 			</div>
 
-			{/* 对比弹窗：原图与转换后 WEBP 左右对比 */}
 			{compareIndex !== null && images[compareIndex]?.converted && (
 				<DialogModal open={true} onClose={handleCloseCompare} className='w-full'>
 					<div className='grid w-full grid-cols-2 gap-4' onClick={handleCloseCompare}>
-						{/* 原图 */}
 						<div className='flex flex-col items-end p-4'>
 							<div>
-								<div className='text-secondary text-center text-sm font-medium'>
-									原图 ({formatBytes(images[compareIndex].file.size)})
-								</div>
-								<img
-									src={images[compareIndex].preview}
-									alt='Original'
-									className='mt-3 max-h-[90vh] rounded-xl bg-slate-100'
-								/>
+								<div className='text-secondary text-center text-sm font-medium'>原图 ({formatBytes(images[compareIndex].file.size)})</div>
+								<img src={images[compareIndex].preview} alt='Original' className='mt-3 max-h-[90vh] rounded-xl bg-slate-100' />
 							</div>
 						</div>
-						{/* WEBP */}
 						<div className='flex flex-col items-start p-4'>
 							<div>
-								<div className='text-secondary text-center text-sm font-medium'>
-									WEBP ({formatBytes(images[compareIndex].converted!.size)})
-								</div>
-								<img
-									src={images[compareIndex].converted!.url}
-									alt='Converted'
-									className='mt-3 max-h-[90vh] rounded-xl bg-slate-100'
-								/>
+								<div className='text-secondary text-center text-sm font-medium'>WEBP ({formatBytes(images[compareIndex].converted!.size)})</div>
+								<img src={images[compareIndex].converted!.url} alt='Converted' className='mt-3 max-h-[90vh] rounded-xl bg-slate-100' />
 							</div>
 						</div>
 					</div>

@@ -1,37 +1,52 @@
-'use client' // 声明该组件仅在客户端运行，因为用到了浏览器 API（如 document、Portal、SVG 滤镜等）
+'use client'
+// 声明该组件仅在客户端运行，因为用到了浏览器 API（如 document、Portal、SVG 滤镜等）
 
-import { createPortal } from 'react-dom' // 用于将组件渲染到指定的 DOM 节点（此处为 document.body）
-import { motion } from 'motion/react' // 引入 motion 组件，提供动画和拖拽等功能
-import displacement1 from './displacement-1.png' // 第一张位移贴图，用于放大镜效果的初步变形
-import displacement2 from './displacement-2.png' // 第二张位移贴图，用于产生液体波动般的扭曲
-import borderImg from './border.png' // 边框/高光贴图，用来模拟玻璃边缘的高光和形状
+import { createPortal } from 'react-dom'
+import { motion } from 'motion/react'
+import displacement1 from './displacement-1.png'
+import displacement2 from './displacement-2.png'
+import borderImg from './border.png'
 import { useEffect, useRef, useState } from 'react'
 
-const width = 210 // 组件的宽度
-const height = 150 // 组件的高度
+const width = 210
+// 组件的宽度
+const height = 150
+// 组件的高度
 
 export default function LiquidGrass() {
-	const bodyRef = useRef(document.body) // 引用 document.body，作为拖拽约束的边界
-	const [show, setShow] = useState(false) // 控制组件是否显示
+	const bodyRef = useRef(document.body)
+	// 引用 document.body，作为拖拽约束的边界
+	const [show, setShow] = useState(false
+									// 控制组件是否显示
 
 	useEffect(() => {
 		setTimeout(() => {
-			setShow(true) // 延迟 1 秒后显示，可以避免初始化时的一些视觉冲突
+			setShow(true)
+			// 延迟 1 秒后显示，可以避免初始化时的一些视觉冲突
 		}, 1000)
 	}, [])
 
-	if (!show) return null // 未到显示时间时，不渲染任何内容
+	if (!show) return null
+	// 未到显示时间时，不渲染任何内容
 
-	return createPortal( // 将组件挂载到 document.body，脱离当前父组件的 DOM 层级，避免被父级样式裁剪
+	return createPortal( 
+		// 将组件挂载到 document.body，脱离当前父组件的 DOM 层级，避免被父级样式裁剪
 		<motion.div
-			initial={{ opacity: 0 }} // 初始状态：完全透明
-			animate={{ opacity: 1 }} // 进入后渐显
-			drag // 允许用户拖拽
-			dragConstraints={bodyRef} // 拖拽范围限制在整个 body 内
-			style={{ width, height }} // 设置固定宽高
-			className='fixed top-16 right-1/2 z-90 select-none' // 固定定位，垂直距离顶部 4rem，水平向右偏移 50%（即右边缘在屏幕中间），不可选中文字
+			initial={{ opacity: 0 }}
+			// 初始状态：完全透明
+			animate={{ opacity: 1 }}
+			// 进入后渐显
+			drag
+			// 允许用户拖拽
+			dragConstraints={bodyRef}
+			// 拖拽范围限制在整个 body 内
+			style={{ width, height }}
+			// 设置固定宽高
+			className='fixed top-16 right-1/2 z-90 select-none'
+			// 固定定位，垂直距离顶部 4rem，水平向右偏移 50%（即右边缘在屏幕中间），不可选中文字
 			whileTap={{
-				scale: 1.1 // 点击/按住时放大到 1.1 倍，提供交互反馈
+				scale: 1.1
+				// 点击/按住时放大到 1.1 倍，提供交互反馈
 			}}>
 			{/* 隐藏的 SVG，仅用于定义滤镜，不直接显示 */}
 			<svg colorInterpolationFilters='sRGB' style={{ display: 'none' }}>
@@ -42,11 +57,16 @@ export default function LiquidGrass() {
 
 						{/* 第二步：基于第一张贴图对原始图形进行位移，产生类似放大镜的扭曲效果 */}
 						<feDisplacementMap
-							in='SourceGraphic' // 输入为当前背景图形（即应用滤镜的元素）
-							in2='magnifying_displacement_map' // 位移参考贴图
-							scale='24' // 位移强度
-							xChannelSelector='R' // 用贴图的红色通道控制 X 方向位移
-							yChannelSelector='G' // 用绿色通道控制 Y 方向位移
+							in='SourceGraphic'
+							// 输入为当前背景图形（即应用滤镜的元素）
+							in2='magnifying_displacement_map'
+							// 位移参考贴图
+							scale='24'
+							// 位移强度
+							xChannelSelector='R'
+							// 用贴图的红色通道控制 X 方向位移
+							yChannelSelector='G'
+							// 用绿色通道控制 Y 方向位移
 							result='magnified_source'
 						/>
 
@@ -60,7 +80,8 @@ export default function LiquidGrass() {
 						<feDisplacementMap
 							in='blurred_source'
 							in2='displacement_map'
-							scale='80' // 更大的位移强度，制造剧烈扭曲
+							scale='80'
+							// 更大的位移强度，制造剧烈扭曲
 							xChannelSelector='R'
 							yChannelSelector='G'
 							result='displaced'
@@ -91,13 +112,17 @@ export default function LiquidGrass() {
 
 			{/* 实际显示的元素，应用了上面定义的滤镜 */}
 			<div
-				className='absolute inset-0 rounded-full' // 绝对定位撑满父容器，圆角形成圆形或胶囊形
+				className='absolute inset-0 rounded-full'
+				// 绝对定位撑满父容器，圆角形成圆形或胶囊形
 				style={{
-					backdropFilter: 'url(#magnifying-glass-filter)', // 使用 CSS backdrop-filter 应用 SVG 滤镜，作用于元素背后的内容
+					backdropFilter: 'url(#magnifying-glass-filter)',
+					// 使用 CSS backdrop-filter 应用 SVG 滤镜，作用于元素背后的内容
 					boxShadow:
-						'rgba(0, 0, 0, 0.05) 0px 4px 9px, rgba(0, 0, 0, 0.05) 0px 2px 24px inset, rgba(255, 255, 255, 0.2) 0px -2px 24px inset' // 多层阴影：外阴影增强玻璃质感，内阴影模拟暗部和顶部高光
+						'rgba(0, 0, 0, 0.05) 0px 4px 9px, rgba(0, 0, 0, 0.05) 0px 2px 24px inset, rgba(255, 255, 255, 0.2) 0px -2px 24px inset'
+					// 多层阴影：外阴影增强玻璃质感，内阴影模拟暗部和顶部高光
 				}}></div>
 		</motion.div>,
-		document.body // 挂载目标
+		document.body
+		// 挂载目标
 	)
 }

@@ -11,30 +11,46 @@ type CardKey = keyof CardStyles
 
 // 组件接收的属性
 interface HomeDraggableLayerProps {
-	cardKey: CardKey        // 当前卡片的标识键
-	x: number               // 卡片在页面上的 x 坐标（像素）
-	y: number               // 卡片在页面上的 y 坐标（像素）
-	width?: number          // 卡片宽度（像素），若未传入则不可调整大小
-	height?: number         // 卡片高度（像素），若未传入则不可调整大小
-	children: React.ReactNode // 卡片内部渲染的内容
+	cardKey: CardKey
+	// 当前卡片的标识键
+	x: number
+	// 卡片在页面上的 x 坐标（像素）
+	y: number
+	// 卡片在页面上的 y 坐标（像素）
+	width?: number
+	// 卡片宽度（像素），若未传入则不可调整大小
+	height?: number
+	// 卡片高度（像素），若未传入则不可调整大小
+	children: React.ReactNode
+	// 卡片内部渲染的内容
 }
 
 // 拖拽状态数据
 interface DragState {
-	dragging: boolean       // 是否正在拖拽
-	startX: number          // 拖拽开始时鼠标/触摸点的 x 坐标
-	startY: number          // 拖拽开始时鼠标/触摸点的 y 坐标
-	initialOffsetX: number  // 拖拽开始前卡片相对于中心的 x 偏移
-	initialOffsetY: number  // 拖拽开始前卡片相对于中心的 y 偏移
+	dragging: boolean
+	// 是否正在拖拽
+	startX: number
+	// 拖拽开始时鼠标/触摸点的 x 坐标
+	startY: number
+	// 拖拽开始时鼠标/触摸点的 y 坐标
+	initialOffsetX: number
+	// 拖拽开始前卡片相对于中心的 x 偏移
+	initialOffsetY: number
+	// 拖拽开始前卡片相对于中心的 y 偏移
 }
 
 // 调整大小状态数据
 interface ResizeState {
-	resizing: boolean       // 是否正在调整大小
-	startX: number          // 调整开始时鼠标/触摸点的 x 坐标
-	startY: number          // 调整开始时鼠标/触摸点的 y 坐标
-	initialWidth: number    // 调整开始前卡片的宽度
-	initialHeight: number   // 调整开始前卡片的高度
+	resizing: boolean
+	// 是否正在调整大小
+	startX: number
+	// 调整开始时鼠标/触摸点的 x 坐标
+	startY: number
+	// 调整开始时鼠标/触摸点的 y 坐标
+	initialWidth: number
+	// 调整开始前卡片的宽度
+	initialHeight: number
+	// 调整开始前卡片的高度
 }
 
 /**

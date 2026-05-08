@@ -1,13 +1,14 @@
-'use client' // 声明该组件为客户端组件，以便使用浏览器 API 和 React hooks
+'use client'
+// 声明该组件为客户端组件，以便使用浏览器 API 和 React hooks
 
 import { PropsWithChildren } from 'react'
 import { useCenterInit } from '@/hooks/use-center'
 import BlurredBubblesBackground from './backgrounds/blurred-bubbles'
 import NavCard from '@/components/nav-card'
-import { Toaster } from 'sonner' // 引入 Sonner 轻量级 toast 通知库
-import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react' // 图标组件
+import { Toaster } from 'sonner'
+import { CircleCheckIcon, InfoIcon, Loader2Icon, OctagonXIcon, TriangleAlertIcon } from 'lucide-react'
 import { useSize, useSizeInit } from '@/hooks/use-size' // 响应式尺寸监听相关 hook
-import { useConfigStore } from '@/app/(home)/stores/config-store' // 全局配置状态管理
+import { useConfigStore } from '@/app/(home)/stores/config-store'
 import { ScrollTopButton } from '@/components/scroll-top-button'
 import MusicCard from '@/components/music-card'
 
@@ -36,7 +37,8 @@ export default function Layout({ children }: PropsWithChildren) {
 			{/* Sonner 的 Toaster 容器：用于全局 toast 弹出，并自定义图标样式 */}
 			<Toaster
 				position='bottom-right'
-				richColors // 启用富颜色模式
+				richColors
+				// 启用富颜色模式
 				icons={{
 					success: <CircleCheckIcon className='size-4' />,
 					info: <InfoIcon className='size-4' />,

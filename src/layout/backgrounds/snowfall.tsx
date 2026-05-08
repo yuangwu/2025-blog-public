@@ -18,8 +18,12 @@ const DOT_RATIO = 0.8
 
 export default function SnowfallBackground({ zIndex, count = 125 }: { zIndex: number; count?: number }) {
 	const [snowflakes, setSnowflakes] = useState<Snowflake[]>([])
+	const [windowSize, setWindowSize] = useState({ height: 0, width: 0 })
 
 	useEffect(() => {
+		// 在客户端安全获取窗口尺寸，避免SSR报错
+		setWindowSize({ height: window.innerHeight, width: window.innerWidth })
+
 		const generateSnowflakes = () => {
 			const newSnowflakes: Snowflake[] = []
 			for (let i = 0; i < count; i++) {
@@ -48,6 +52,9 @@ export default function SnowfallBackground({ zIndex, count = 125 }: { zIndex: nu
 		generateSnowflakes()
 	}, [count])
 
+	// 水平位移使用客户端窗口宽度计算，避免SSR阶段访问window
+	const horizontalShift = windowSize.width ? `-${(Math.random() * windowSize.width) / 5}px` : '0px'
+
 	return (
 		<motion.div
 			animate={{ opacity: 1 }}
@@ -67,8 +74,8 @@ export default function SnowfallBackground({ zIndex, count = 125 }: { zIndex: nu
 					}}
 					initial={{ y: 0, x: 0 }}
 					animate={{
-						y: window.innerHeight + 200,
-						x: `-${(Math.random() * window.innerWidth) / 5}px`,
+						y: windowSize.height + 200, // 使用状态值，避免SSR错误
+						x: horizontalShift,
 						rotate: snowflake.type === 'image' ? snowflake.rotate : 0
 					}}
 					transition={{

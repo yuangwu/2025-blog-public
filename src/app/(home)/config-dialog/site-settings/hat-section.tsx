@@ -1,5 +1,5 @@
-// 标记这是一个 React 客户端组件（Next.js 13+ App Router 语法）
 'use client'
+// 标记这是一个 React 客户端组件（Next.js 13+ App Router 语法）
 
 // 导入类型定义：SiteContent 是全局状态的类型结构
 import type { SiteContent } from '../../stores/config-store'

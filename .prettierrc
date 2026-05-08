@@ -1,12 +1,32 @@
 {
+// 加载插件列表，这里使用 Tailwind CSS 的 Prettier 插件，
+  // 可自动对 Tailwind 类名按推荐顺序排序
 	"plugins": ["prettier-plugin-tailwindcss"],
+
+ // JSX 属性中使用单引号而非双引号
 	"jsxSingleQuote": true,
+
+// 多行 JSX 元素的闭合括号 `>` 放在最后一行的末尾，而不是单独新起一行
 	"bracketSameLine": true,
+
+// 每行最大字符数设为 160，超过会尝试换行（不包括缩进与行尾符）
 	"printWidth": 160,
+
+// 在非 JSX 代码中使用单引号代替双引号
 	"singleQuote": true,
+
+// 多行时是否添加尾随逗号："none" 表示一律不添加
 	"trailingComma": "none",
+
+// 使用制表符（Tab）缩进，而不是空格
 	"useTabs": true,
+
+// 一个缩进级别对应的空格数（影响制表符的显示宽度及换行计算）
 	"tabWidth": 2,
+
+// 语句末尾不加分号
 	"semi": false,
+
+// 箭头函数参数括号风格："avoid" 表示当只有一个参数时省略括号 (x) => x
 	"arrowParens": "avoid"
 }

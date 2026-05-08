@@ -78,7 +78,8 @@
 		@apply flex-1;
 		appearance: none;
 		height: 6px;
-		border-radius: 9999px; /* 全圆角 */
+		border-radius: 9999px;
+		/* 全圆角 */
 		/* 渐变轨道：从品牌色过渡到半透明品牌色 */
 		background: linear-gradient(90deg, var(--color-brand) 0%, color-mix(in srgb, var(--color-brand) 50%, transparent) 100%);
 	}
@@ -152,7 +153,8 @@
 	box-shadow:
 		0 40px 50px -32px rgba(0, 0, 0, 0.05),
 		inset 0 0 20 rgba(255, 255, 255, 0.25);
-	backdrop-filter: blur(4px); /* 背景模糊 */
+	backdrop-filter: blur(4px);
+	/* 背景模糊 */
 
 	/* 当卡片上存在 .squircle 类时，尝试使用 corner-shape 实验属性实现超椭圆角 */
 	&.squircle {
@@ -175,9 +177,12 @@
 /* 文字渐变效果：半透明黑渐变叠加品牌色渐变，并裁剪到文字上 */
 @utility text-linear {
 	background: linear-gradient(to right bottom, #0003 0%, #aaa1), linear-gradient(to right bottom, var(--color-brand) 40%, var(--color-brand-secondary));
-	-webkit-background-clip: text; /* 将背景裁剪到文字范围 */
-	-webkit-text-fill-color: transparent; /* 文字填充颜色设为透明，以显示背景渐变 */
-	background-clip: text;           /* 标准属性 */
+	-webkit-background-clip: text;
+	/* 将背景裁剪到文字范围 */
+	-webkit-text-fill-color: transparent;
+	/* 文字填充颜色设为透明，以显示背景渐变 */
+	background-clip: text;
+	/* 标准属性 */
 }
 
 /* 背景渐变：品牌色到辅助品牌的线性渐变 */
@@ -203,7 +208,8 @@
 /* 品牌按钮：填充品牌色 + 圆角 + 弹性布局 + 边框 + 内边距 + 文字样式 */
 @utility brand-btn {
 	@apply bg-brand btn-rounded flex items-center gap-2 border-[1.5px] px-4 py-2 text-sm font-medium text-white;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* 轻微阴影 */
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+	/* 轻微阴影 */
 }
 
 /* 隐藏数字输入框的增减按钮（spinner） */
@@ -225,19 +231,24 @@
 @keyframes heartbeat-frame {
 	0%,
 	100% {
-		transform: scale(1);      /* 正常大小 */
+		transform: scale(1);
+		/* 正常大小 */
 	}
 	20% {
-		transform: scale(1.15);   /* 放大 */
+		transform: scale(1.15);
+		/* 放大 */
 	}
 	40% {
-		transform: scale(1);      /* 还原 */
+		transform: scale(1);
+		/* 还原 */
 	}
 	60% {
-		transform: scale(1.15);   /* 再次放大 */
+		transform: scale(1.15);
+		/* 再次放大 */
 	}
 	80% {
-		transform: scale(1);      /* 再次还原 */
+		transform: scale(1);
+		/* 再次还原 */
 	}
 }
 

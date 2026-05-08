@@ -31,24 +31,33 @@ export async function encrypt(text: string, key: string) {
 
   // 导入派生后的密钥材料，指定用于 AES-GCM 加密操作
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',                 // 密钥格式：原始字节数组
-    keyData,               // 密钥数据（SHA-256 哈希结果）
-    { name: 'AES-GCM' },   // 算法名称
-    false,                 // 密钥不可再导出
-    ['encrypt']            // 密钥用途：仅加密
+    'raw',
+    // 密钥格式：原始字节数组
+    keyData, 
+    // 密钥数据（SHA-256 哈希结果）
+    { name: 'AES-GCM' },
+    // 算法名称
+    false,
+    // 密钥不可再导出
+    ['encrypt']
+    // 密钥用途：仅加密
   )
 
   // 执行加密，返回包含认证标签的密文（ArrayBuffer）
   const encrypted = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv }, // 算法与 IV
-    cryptoKey,                // 派生后的密钥
-    enc.encode(text)          // 明文字节
+    cryptoKey,
+    // 派生后的密钥
+    enc.encode(text)
+    // 明文字节
   )
 
   // 将 IV 与密文拼接成一个 Uint8Array，以便传输或存储
   const result = new Uint8Array(iv.length + encrypted.byteLength)
-  result.set(iv, 0)                                // 前 12 字节存放 IV
-  result.set(new Uint8Array(encrypted), iv.length) // 之后存放密文
+  result.set(iv, 0)
+  // 前 12 字节存放 IV
+  result.set(new Uint8Array(encrypted), iv.length)
+  // 之后存放密文
 
   // 将 IV+密文的整体转换为 Base64 字符串，便于存储和传输
   return btoa(String.fromCharCode(...result))

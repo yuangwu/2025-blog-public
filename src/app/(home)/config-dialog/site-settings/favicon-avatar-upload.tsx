@@ -1,13 +1,9 @@
-// 标记这是一个 React 客户端组件（Next.js 13+ App Router 语法）
 'use client'
+// 标记这是一个 React 客户端组件（Next.js 13+ App Router 语法）
 
-// 导入 React 的 useRef 钩子，用于获取 DOM 元素引用
 import { useRef } from 'react'
-// 导入 sonner 库的 toast 组件，用于显示消息提示
 import { toast } from 'sonner'
-// 导入自定义的文件 SHA256 哈希计算函数
 import { hashFileSHA256 } from '@/lib/file-utils'
-// 导入类型定义 FileItem
 import type { FileItem } from './types'
 
 // 定义组件的 Props 接口

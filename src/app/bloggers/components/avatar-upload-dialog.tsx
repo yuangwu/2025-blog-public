@@ -1,243 +1,152 @@
-'use client'
+'use client' // 确保该组件仅在客户端渲染（Vercel 部署时 Next.js 支持）
 
-import { useState, useRef, useEffect } from 'react'
-import { motion } from 'motion/react'
-import { toast } from 'sonner'
-// 导入博主网格视图组件及其 Blogger 类型
-// ✅ 默认导入名称改为 CategoryModal（与 grid-view.tsx 实际导出一致）
-import CategoryModal, { type Blogger } from './grid-view'
-// 创建博主对话框组件
-import CreateDialog from './components/create-dialog'
-// 推送博主数据到 GitHub 的服务函数
-import { pushBloggers } from './services/push-bloggers'
-// 用于获取认证状态和设置私钥的 hook
-import { useAuthStore } from '@/hooks/use-auth'
-// 站点全局配置 store
-import { useConfigStore } from '@/app/(home)/stores/config-store'
-/**
- * 初始博主列表数据（静态 JSON 文件）
- * ⚠️ 部署前请确保 list.json 文件存在且格式正确，否则构建将失败。
- */
-import initialList from './list.json'
-// 头像上传相关类型
-import type { AvatarItem } from './components/avatar-upload-dialog'
+// 依赖检查：需确保已安装 'sonner'、'lucide-react'，且项目中存在 @/components/dialog-modal 组件
+import { useState, useRef } from 'react'
+import { toast } from 'sonner' // toast 提示，需安装 sonner
+import { Plus } from 'lucide-react' // 图标库，需安装 lucide-react
+import { DialogModal } from '@/components/dialog-modal' // 自定义模态框组件，必须存在且默认导出 DialogModal
 
-/**
- * 博主管理页面组件
- * 支持查看、编辑、新增、删除博主，并通过密钥认证后推送到 GitHub。
- */
-export default function Page() {
-	// 当前编辑中的博主列表
-	const [bloggers, setBloggers] = useState<Blogger[]>(initialList as Blogger[])
-	// 进入编辑模式前的原始列表，用于取消编辑时恢复
-	const [originalBloggers, setOriginalBloggers] = useState<Blogger[]>(initialList as Blogger[])
-	// 是否处于编辑模式
-	const [isEditMode, setIsEditMode] = useState(false)
-	// 是否正在保存数据
-	const [isSaving, setIsSaving] = useState(false)
-	// 当前正在编辑的博主（修改模式），为 null 表示新增
-	const [editingBlogger, setEditingBlogger] = useState<Blogger | null>(null)
-	// 创建对话框的打开状态
-	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-	// 保存每个博主对应的头像文件信息，key 为博主 url
-	const [avatarItems, setAvatarItems] = useState<Map<string, AvatarItem>>(new Map())
-	// 隐藏的文件选择 input，用于导入私钥
-	const keyInputRef = useRef<HTMLInputElement>(null)
+// 头像数据结构的联合类型：可以是 URL 字符串，也可以是本地文件对象（含预览 URL 和可选哈希）
+export type AvatarItem = { type: 'url'; url: string } | { type: 'file'; file: File; previewUrl: string; hash?: string }
 
-	// 获取认证状态与设置私钥的方法
-	const { isAuth, setPrivateKey } = useAuthStore()
-	// 获取站点内容配置
-	const { siteContent } = useConfigStore()
-	// 根据配置决定是否隐藏编辑按钮
-	const hideEditButton = siteContent.hideEditButton ?? false
+// 对话框组件 Props 类型定义
+interface AvatarUploadDialogProps {
+	currentAvatar?: string // 当前头像 URL（用于回显）
+	onClose: () => void // 关闭对话框的回调
+	onSubmit: (avatar: AvatarItem) => void // 提交头像时的回调
+}
 
-	/**
-	 * 更新博主信息
-	 * @param updatedBlogger 更新后的博主对象
-	 * @param oldBlogger 原来的博主对象（用于匹配）
-	 * @param avatarItem 可选的头像文件，如提供则一同更新
-	 */
-	const handleUpdate = (updatedBlogger: Blogger, oldBlogger: Blogger, avatarItem?: AvatarItem) => {
-		setBloggers(prev => prev.map(b => (b.url === oldBlogger.url ? updatedBlogger : b)))
-		if (avatarItem) {
-			setAvatarItems(prev => {
-				const newMap = new Map(prev)
-				newMap.set(updatedBlogger.url, avatarItem)
-				return newMap
+export default function AvatarUploadDialog({ currentAvatar, onClose, onSubmit }: AvatarUploadDialogProps) {
+	// URL 输入框的值，若传入 currentAvatar 则默认填充
+	const [urlInput, setUrlInput] = useState(currentAvatar || '')
+	// 用户选择的本地文件及预览 URL（用于展示缩略图）
+	const [previewFile, setPreviewFile] = useState<{ file: File; previewUrl: string } | null>(null)
+	// 隐藏的文件 input 的引用
+	const fileInputRef = useRef<HTMLInputElement>(null)
+
+	// 处理用户选择本地文件
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+		if (!file) return
+
+		// 校验文件类型：仅允许图片
+		if (!file.type.startsWith('image/')) {
+			toast.error('请选择图片文件')
+			return
+		}
+
+		// 生成预览 URL（注意：使用时需在组件卸载或关闭时 revoke，避免内存泄漏）
+		const previewUrl = URL.createObjectURL(file)
+		setPreviewFile({ file, previewUrl })
+		setUrlInput('') // 选中文件后清空 URL 输入框
+	}
+
+	// 提交表单：根据用户提供的内容（文件或 URL）调用 onSubmit
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault()
+
+		if (previewFile) {
+			// 若有本地文件，则提交文件类型数据
+			onSubmit({
+				type: 'file',
+				file: previewFile.file,
+				previewUrl: previewFile.previewUrl
 			})
-		}
-	}
-
-	// 打开新增博主对话框
-	const handleAdd = () => {
-		setEditingBlogger(null)
-		setIsCreateDialogOpen(true)
-	}
-
-	// 保存从创建对话框返回的博主数据（新增或修改）
-	const handleSaveBlogger = (updatedBlogger: Blogger) => {
-		if (editingBlogger) {
-			// 修改已有博主
-			const updated = bloggers.map(b => (b.url === editingBlogger.url ? updatedBlogger : b))
-			setBloggers(updated)
-		} else {
-			// 添加新博主
-			setBloggers([...bloggers, updatedBlogger])
-		}
-	}
-
-	// 删除博主（需要用户确认）
-	const handleDelete = (blogger: Blogger) => {
-		if (confirm(`确定要删除 ${blogger.name} 吗？`)) {
-			setBloggers(bloggers.filter(b => b.url !== blogger.url))
-		}
-	}
-
-	// 选择私钥文件并自动保存
-	const handleChoosePrivateKey = async (file: File) => {
-		try {
-			const text = await file.text()
-			setPrivateKey(text)
-			// 导入密钥后自动触发保存操作，将当前编辑结果推送到远端
-			await handleSave()
-		} catch (error) {
-			console.error('Failed to read private key:', error)
-			toast.error('读取密钥文件失败')
-		}
-	}
-
-	// 点击保存按钮时，未认证则触发私钥文件选择，已认证则直接保存
-	const handleSaveClick = () => {
-		if (!isAuth) {
-			keyInputRef.current?.click()
-		} else {
-			handleSave()
-		}
-	}
-
-	// 核心保存逻辑：将博主列表与头像项推送到 GitHub
-	const handleSave = async () => {
-		setIsSaving(true)
-
-		try {
-			await pushBloggers({
-				bloggers,
-				avatarItems
+		} else if (urlInput.trim()) {
+			// 否则提交 URL 类型数据
+			onSubmit({
+				type: 'url',
+				url: urlInput.trim()
 			})
-
-			// 保存成功后更新原始列表，清空暂存的头像项，退出编辑模式
-			setOriginalBloggers(bloggers)
-			setAvatarItems(new Map())
-			setIsEditMode(false)
-			toast.success('保存成功！')
-		} catch (error: any) {
-			console.error('Failed to save:', error)
-			toast.error(`保存失败: ${error?.message || '未知错误'}`)
-		} finally {
-			setIsSaving(false)
+		} else {
+			toast.error('请上传图片或输入 URL')
+			return
 		}
+
+		// 提交成功后重置状态并关闭对话框
+		setPreviewFile(null)
+		setUrlInput(currentAvatar || '')
+		onClose()
 	}
 
-	// 取消编辑，恢复到编辑前的原始数据
-	const handleCancel = () => {
-		setBloggers(originalBloggers)
-		setAvatarItems(new Map())
-		setIsEditMode(false)
+	// 关闭对话框时的清理工作：释放预览 URL 对象，重置状态
+	const handleClose = () => {
+		if (previewFile) {
+			URL.revokeObjectURL(previewFile.previewUrl) // 避免内存泄漏
+		}
+		setPreviewFile(null)
+		setUrlInput(currentAvatar || '')
+		onClose()
 	}
-
-	// 根据认证状态显示对应按钮文字
-	const buttonText = isAuth ? '保存' : '导入密钥'
-
-	// 注册全局快捷键：非编辑模式下按下 Ctrl/Cmd + , 进入编辑模式
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (!isEditMode && (e.ctrlKey || e.metaKey) && e.key === ',') {
-				e.preventDefault()
-				setIsEditMode(true)
-			}
-		}
-
-		window.addEventListener('keydown', handleKeyDown)
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown)
-		}
-	}, [isEditMode])
 
 	return (
-		<>
-			{/* 隐藏的文件上传 input，用于导入 .pem 格式私钥文件 */}
-			<input
-				ref={keyInputRef}
-				type='file'
-				accept='.pem'
-				className='hidden'
-				onChange={async e => {
-					const f = e.target.files?.[0]
-					if (f) await handleChoosePrivateKey(f)
-					// 清空 input 的值，以便重复选择同一文件仍能触发 onChange
-					if (e.currentTarget) e.currentTarget.value = ''
-				}}
-			/>
+		<DialogModal open onClose={handleClose} className='card w-md'>
+			{/* 注意：DialogModal 组件需要支持 open、onClose、className 属性，且内部应实现模态框逻辑 */}
+			<h2 className='mb-4 text-xl font-bold'>选择头像</h2>
 
-			{/* ✅ 组件名改为与导入一致 */}
-			<CategoryModal bloggers={bloggers} isEditMode={isEditMode} onUpdate={handleUpdate} onDelete={handleDelete} />
+			<form onSubmit={handleSubmit} className='space-y-4'>
+				{/* 图片上传区域 */}
+				<div>
+					<label className='text-secondary mb-2 block text-sm font-medium'>上传图片</label>
+					<input ref={fileInputRef} type='file' accept='image/*' className='hidden' onChange={handleFileSelect} />
+					<div
+						onClick={() => fileInputRef.current?.click()}
+						className='mx-auto flex h-32 w-32 cursor-pointer items-center justify-center rounded-full border border-gray-300 bg-secondary/10 transition-colors hover:bg-gray-200'>
+						{previewFile ? (
+							// 已有预览图则显示图片
+							<img src={previewFile.previewUrl} alt='preview' className='h-full w-full rounded-lg object-cover' />
+						) : (
+							// 否则显示“+”号上传提示
+							<div className='text-center'>
+								<Plus className='text-secondary mx-auto mb-1 h-8 w-8' />
+								<p className='text-secondary text-xs'>点击上传图片</p>
+							</div>
+						)}
+					</div>
+				</div>
 
-			{/* 右上角操作按钮栏，移动端隐藏 */}
-			<motion.div
-				initial={{ opacity: 0, scale: 0.6 }}
-				animate={{ opacity: 1, scale: 1 }}
-				className='absolute top-4 right-6 flex gap-3 max-sm:hidden'>
-				{isEditMode ? (
-					<>
-						{/* 取消编辑按钮 */}
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							onClick={handleCancel}
-							disabled={isSaving}
-							className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>
-							取消
-						</motion.button>
-						{/* 添加博主按钮 */}
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							onClick={handleAdd}
-							className='rounded-xl border bg-white/60 px-6 py-2 text-sm'>
-							添加
-						</motion.button>
-						{/* 保存 / 导入密钥按钮 */}
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							onClick={handleSaveClick}
-							disabled={isSaving}
-							className='brand-btn px-6'>
-							{isSaving ? '保存中...' : buttonText}
-						</motion.button>
-					</>
-				) : (
-					// 未编辑状态，且未被配置隐藏时，显示编辑按钮
-					!hideEditButton && (
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							onClick={() => setIsEditMode(true)}
-							className='bg-card rounded-xl border px-6 py-2 text-sm backdrop-blur-sm transition-colors hover:bg-white/80'>
-							编辑
-						</motion.button>
-					)
-				)}
-			</motion.div>
+				{/* 分割线：“或” */}
+				<div className='relative'>
+					<div className='absolute inset-0 flex items-center'>
+						<div className='w-full border-t border-gray-300'></div>
+					</div>
+					<div className='relative flex justify-center text-sm'>
+						<span className='text-secondary rounded-lg bg-white px-4 py-1'>或</span>
+					</div>
+				</div>
 
-			{/* 创建博主对话框，受控打开 */}
-			{isCreateDialogOpen && (
-				<CreateDialog
-					blogger={editingBlogger}
-					onClose={() => setIsCreateDialogOpen(false)}
-					onSave={handleSaveBlogger}
-				/>
-			)}
-		</>
+				{/* URL 输入框：用于输入网络图片地址 */}
+				<div>
+					<label className='text-secondary mb-2 block text-sm font-medium'>图片 URL</label>
+					<input
+						type='url'
+						value={urlInput}
+						onChange={e => {
+							setUrlInput(e.target.value)
+							// 当切换到 URL 输入时，释放之前预览的文件对象，避免内存残留
+							if (previewFile) {
+								URL.revokeObjectURL(previewFile.previewUrl)
+								setPreviewFile(null)
+							}
+						}}
+						placeholder='https://example.com/avatar.png'
+						className='focus:ring-brand w-full rounded-lg border border-gray-300 bg-gray-200 px-4 py-2 focus:ring-2 focus:outline-none'
+					/>
+				</div>
+
+				{/* 按钮区域：确认和取消 */}
+				<div className='flex gap-3 pt-2'>
+					<button type='submit' className='brand-btn flex-1 justify-center rounded-lg px-6 py-2.5'>
+						确认
+					</button>
+					<button
+						type='button'
+						onClick={handleClose}
+						className='flex-1 rounded-lg border border-gray-300 bg-white px-6 py-2.5 transition-colors hover:bg-gray-50'>
+						取消
+					</button>
+				</div>
+			</form>
+		</DialogModal>
 	)
 }

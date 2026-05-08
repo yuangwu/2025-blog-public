@@ -1,15 +1,46 @@
-@theme {
-	--color-primary: #334f52;
-	--color-secondary: #7b888e;
-	--color-brand-secondary: #1fc9e7;
-	--color-bg: #eeeeee;
-	--color-border: #fff;
-	--color-brand: #35bfab;
-	--color-card: #ffffff66;
-	--color-article: #ffffffcc;
+/* =============================================
+   项目全局主题变量（用于 Vercel 部署）
+   本部分定义色彩与字体基础变量，确保构建无缺失依赖
+   ============================================= */
 
-	--font-averia: 'Averia Gruesa Libre', sans-serif;
-	--font-sans:
-		'PingFang SC', -apple-system, system-ui, 'Segoe UI', Roboto, Ubuntu, Cantarell, 'Noto Sans', sans-serif, BlinkMacSystemFont, 'Helvetica Neue',
-		'Hiragino Sans GB', 'Microsoft YaHei', Arial;
+/* 主题色彩集合 */
+@theme {
+  /* 主色：用于主要按钮、标题等强调元素 */
+  --color-primary: #334f52;
+
+  /* 次色：用于次要文字或辅助图形 */
+  --color-secondary: #7b888e;
+
+  /* 品牌辅助色：亮青色，常用于悬停、标签或装饰 */
+  --color-brand-secondary: #1fc9e7;
+
+  /* 页面背景色：浅灰，提供整体氛围 */
+  --color-bg: #eeeeee;
+
+  /* 边框颜色：白色，用于分隔线或卡片边框 */
+  --color-border: #fff;
+
+  /* 品牌主色：青绿色，突出品牌识别 */
+  --color-brand: #35bfab;
+
+  /* 卡片背景色：半透明白色，提升层次感 */
+  --color-card: #ffffff66;
+
+  /* 文章区块背景：更厚实的半透明白色，增强可读性 */
+  --color-article: #ffffffcc;
+
+  /* =============================================
+     字体栈
+     所有字体均为系统已安装或通过 Google Fonts 引入，
+     不会因缺失而影响部署，降级为 sans-serif。
+     ============================================= */
+
+  /* 装饰性字体：Averia Gruesa Libre，用于特殊标题 */
+  --font-averia: 'Averia Gruesa Libre', sans-serif;
+
+  /* 无衬线正文字体栈：优先 PingFang SC（苹方），逐级回退至通用字体 */
+  --font-sans:
+    'PingFang SC', -apple-system, system-ui, 'Segoe UI', Roboto, Ubuntu,
+    Cantarell, 'Noto Sans', sans-serif, BlinkMacSystemFont, 'Helvetica Neue',
+    'Hiragino Sans GB', 'Microsoft YaHei', Arial;
 }

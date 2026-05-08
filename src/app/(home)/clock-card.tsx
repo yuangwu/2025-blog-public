@@ -1,4 +1,4 @@
-'use client'
+'use client' // 标记此文件为客户端组件，因为用到了状态、事件和浏览器 API
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -9,35 +9,46 @@ import { useLayoutEditStore } from './stores/layout-edit-store'
 import { CARD_SPACING } from '@/consts'
 import { HomeDraggableLayer } from './home-draggable-layer'
 
+/**
+ * 时钟卡片组件
+ * 用于展示当前时间（七段数码管风格），可点击跳转到全屏时钟页面
+ * 位置根据中心点与各卡片样式的偏移量动态计算
+ */
 export default function ClockCard() {
 	const router = useRouter()
-	const center = useCenterStore()
-	const { cardStyles, siteContent } = useConfigStore()
-	const editing = useLayoutEditStore(state => state.editing)
-	const [time, setTime] = useState(new Date())
-	const styles = cardStyles.clockCard
-	const hiCardStyles = cardStyles.hiCard
-	const showSeconds = siteContent.clockShowSeconds ?? false
+	const center = useCenterStore() // 获取页面中心点坐标
+	const { cardStyles, siteContent } = useConfigStore() // 获取卡片样式配置与站点内容配置
+	const editing = useLayoutEditStore(state => state.editing) // 是否处于布局编辑模式
+	const [time, setTime] = useState(new Date()) // 当前时间状态
+	const styles = cardStyles.clockCard // 时钟卡片自己的样式（尺寸、偏移等）
+	const hiCardStyles = cardStyles.hiCard // Hi 卡片的样式，用于计算默认相对位置
+	const showSeconds = siteContent.clockShowSeconds ?? false // 是否显示秒
 
+	// 根据是否显示秒来设定定时器间隔：显示秒则每秒更新，否则每5秒更新
 	useEffect(() => {
 		const interval = showSeconds ? 1000 : 5000
 		const timer = setInterval(() => {
 			setTime(new Date())
 		}, interval)
 
-		return () => clearInterval(timer)
+		return () => clearInterval(timer) // 组件卸载时清除定时器
 	}, [showSeconds])
 
+	// 补零格式化小时、分钟、秒
 	const hours = time.getHours().toString().padStart(2, '0')
 	const minutes = time.getMinutes().toString().padStart(2, '0')
 	const seconds = time.getSeconds().toString().padStart(2, '0')
 
+	// 计算卡片绝对坐标
+	// 如果样式里显式设置了 offsetX 就用它，否则默认放在 hiCard 右侧并留出间距
 	const x = styles.offsetX !== null ? center.x + styles.offsetX : center.x + CARD_SPACING + hiCardStyles.width / 2
 	const y = styles.offsetY !== null ? center.y + styles.offsetY : center.y - styles.offset - styles.height
 
 	return (
+		// 可拖拽容器，提供拖拽排序能力，仅在编辑模式下生效
 		<HomeDraggableLayer cardKey='clockCard' x={x} y={y} width={styles.width} height={styles.height}>
 			<Card order={styles.order} width={styles.width} height={styles.height} x={x} y={y} className='p-2'>
+				{/* 如果开启了圣诞节装饰，显示两片雪花贴纸 */}
 				{siteContent.enableChristmas && (
 					<>
 						<img
@@ -54,6 +65,7 @@ export default function ClockCard() {
 						/>
 					</>
 				)}
+				{/* 时间显示区域，点击跳转到 /clock 全屏时钟页（编辑模式下不跳转） */}
 				<div
 					onClick={() => {
 						if (!editing) {
@@ -66,6 +78,7 @@ export default function ClockCard() {
 					<Colon />
 					<SevenSegmentDigit value={parseInt(minutes[0])} />
 					<SevenSegmentDigit value={parseInt(minutes[1])} />
+					{/* 仅在需要显示秒数时渲染秒的数码管 */}
 					{showSeconds && (
 						<>
 							<Colon />
@@ -84,7 +97,12 @@ interface SevenSegmentDigitProps {
 	className?: string
 }
 
+/**
+ * 七段数码管单个数字组件
+ * 使用 SVG 路径绘制 0-9 的数字，根据分段映射控制每段亮灭
+ */
 function SevenSegmentDigit({ value, className }: SevenSegmentDigitProps) {
+	// 0-9 每个数字对应的七段亮灭状态（顺序：顶横、右上竖、右下竖、底横、左下竖、左上竖、中横）
 	const segmentMap = {
 		0: [true, true, true, true, true, true, false],
 		1: [false, true, true, false, false, false, false],
@@ -98,36 +116,45 @@ function SevenSegmentDigit({ value, className }: SevenSegmentDigitProps) {
 		9: [true, true, true, true, false, true, true]
 	}
 
+	// 根据传入的数字取出对应的亮灭状态数组，无效数字默认显示 0
 	const segments = segmentMap[value as keyof typeof segmentMap] || segmentMap[0]
-	const activeColor = 'var(--color-primary)'
-	const inactiveColor = 'rgba(0, 0, 0, 0.05)'
+	const activeColor = 'var(--color-primary)' // 亮段颜色
+	const inactiveColor = 'rgba(0, 0, 0, 0.05)' // 灭段颜色（几乎不可见）
 
 	return (
+		// SVG 尺寸固定为 29x52，内部包含 7 个 path，分别代表七段
 		<svg width='29' height='52' viewBox='0 0 29 52' fill='none' xmlns='http://www.w3.org/2000/svg' className={className}>
+			{/* 顶横 */}
 			<path
 				d='M4.20248 3.49482C2.82797 2.27303 3.69218 0 5.53121 0H22.6867C24.5522 0 25.4019 2.32821 23.975 3.52982L23.5791 3.86316C23.2186 4.16681 22.7623 4.33333 22.2909 4.33333H5.90621C5.41638 4.33333 4.94359 4.15358 4.57748 3.82815L4.20248 3.49482Z'
 				fill={segments[0] ? activeColor : inactiveColor}
 			/>
+			{/* 中横 */}
 			<path
 				d='M3.85122 24.13C4.16644 23.936 4.5293 23.8333 4.89942 23.8333H23.3022C23.6503 23.8333 23.9923 23.9242 24.2945 24.0969L24.5862 24.2635C25.9298 25.0313 25.9298 26.9687 24.5862 27.7365L24.2945 27.9032C23.9923 28.0758 23.6503 28.1667 23.3022 28.1667H4.89942C4.5293 28.1667 4.16644 28.064 3.85122 27.87L3.58039 27.7033C2.31131 26.9224 2.31132 25.0777 3.58039 24.2967L3.85122 24.13Z'
 				fill={segments[6] ? activeColor : inactiveColor}
 			/>
+			{/* 左上竖 */}
 			<path
 				d='M3.06 23.5458C1.7279 24.3784 -8.31295e-08 23.4207 -1.47217e-07 21.8498L-8.06095e-07 5.69981C-8.77526e-07 3.94893 2.09055 3.04323 3.36788 4.24073L3.70121 4.55323C4.10452 4.93133 4.33333 5.45949 4.33333 6.01231L4.33333 21.6415C4.33333 22.3311 3.97809 22.972 3.39333 23.3375L3.06 23.5458Z'
 				fill={segments[5] ? activeColor : inactiveColor}
 			/>
+			{/* 右上竖 */}
 			<path
 				d='M24.8497 4.25654C26.1428 3.12502 28.1667 4.04338 28.1667 5.76169L28.1667 21.8498C28.1667 23.4207 26.4388 24.3784 25.1067 23.5458L24.7734 23.3375C24.1886 22.972 23.8334 22.3311 23.8334 21.6415L23.8334 6.05336C23.8334 5.47663 24.0823 4.92798 24.5163 4.54821L24.8497 4.25654Z'
 				fill={segments[1] ? activeColor : inactiveColor}
 			/>
+			{/* 底横 */}
 			<path
 				d='M23.9259 48.6321C25.1234 49.9094 24.2177 52 22.4669 52L5.69978 52C3.9489 52 3.04321 49.9094 4.24071 48.6321L4.55321 48.2988C4.9313 47.8955 5.45947 47.6667 6.01228 47.6667L22.1544 47.6667C22.7072 47.6667 23.2353 47.8955 23.6134 48.2988L23.9259 48.6321Z'
 				fill={segments[3] ? activeColor : inactiveColor}
 			/>
+			{/* 右下竖 */}
 			<path
 				d='M25.1862 28.489C26.5194 27.7391 28.1667 28.7025 28.1667 30.2322L28.1667 46.6299C28.1667 48.4117 26.0124 49.3041 24.7525 48.0441L24.4191 47.7108C24.0441 47.3357 23.8334 46.827 23.8334 46.2966L23.8334 30.4197C23.8334 29.6971 24.2231 29.0308 24.8528 28.6765L25.1862 28.489Z'
 				fill={segments[2] ? activeColor : inactiveColor}
 			/>
+			{/* 左下竖 */}
 			<path
 				d='M3.4564 47.7859C2.21509 49.1048 4.23823e-07 48.2263 6.6133e-07 46.4152L2.79423e-06 30.1501C3.00022e-06 28.5793 1.72791 27.6216 3.06 28.4541L3.39333 28.6625C3.9781 29.028 4.33334 29.6689 4.33334 30.3585L4.33333 46.061C4.33333 46.5705 4.13891 47.0607 3.78973 47.4317L3.4564 47.7859Z'
 				fill={segments[4] ? activeColor : inactiveColor}
@@ -136,6 +163,10 @@ function SevenSegmentDigit({ value, className }: SevenSegmentDigitProps) {
 	)
 }
 
+/**
+ * 时间分隔冒号组件
+ * 显示两个上下排列的小方块，表示时钟的冒号
+ */
 function Colon({ className }: { className?: string }) {
 	return (
 		<div className={`flex flex-col justify-center gap-2 ${className}`}>

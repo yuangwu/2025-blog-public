@@ -2,10 +2,10 @@
 main = ".open-next/worker.js"
 
 # Worker 的名称，部署后在 Cloudflare 仪表板中显示
-name = "2025-blog-public"
+name = "yuangwu"
 
 # 兼容性日期：使用该日期及之后的 Workers 运行时行为与 API
-compatibility_date = "2025-03-25"
+compatibility_date = "2026-07-07"
 
 # 启用 Node.js 兼容性，可在 Worker 中使用部分 Node.js API（如 Buffer、require 等）
 compatibility_flags = ["nodejs_compat"]

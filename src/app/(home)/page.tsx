@@ -101,7 +101,7 @@ export default function Home() {
 				</div>
 			)}
 
-			{/* 卡片区域，根据配置决定各卡片是否显示，移动端仅显示部分卡片 */}
+			{/* 卡片区域，根据配置决定各卡片是否显示 */}
 			<div className='max-sm:flex max-sm:flex-col max-sm:items-center max-sm:gap-6 max-sm:pt-28 max-sm:pb-20'>
 				{cardStyles.artCard?.enabled !== false && <ArtCard />}
 				{cardStyles.hiCard?.enabled !== false && <HiCard />}
@@ -111,7 +111,8 @@ export default function Home() {
 				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
 				{!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />}
 				{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
-				{!maxSM && cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
+				{/* WriteButtons（社交按钮卡片）现在在所有屏幕尺寸下都根据 enabled 配置显示，不再仅限于非移动端 */}
+				{cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
 				{cardStyles.likePosition?.enabled !== false && <LikePosition />}
 				{cardStyles.hatCard?.enabled !== false && <HatCard />}
 				{cardStyles.beianCard?.enabled !== false && <BeianCard />}
